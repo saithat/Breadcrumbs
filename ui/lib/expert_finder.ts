@@ -288,7 +288,6 @@ function multiExpertMarkdown(disease: string, authors: AuthorScore[]): string {
   // consult routing sentence
   const lead = authors[0];
   const tail = authors.slice(1);
-  const leadLast = lead.display.split(" ").slice(-1)[0];
   lines.push(
     `For ${consultHint(lead.findings[0])}, ${lead.display} is the right first message.`,
   );

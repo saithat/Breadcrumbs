@@ -16,7 +16,11 @@ h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.01em}
 button{font-family:inherit}
 
 /* SHELL */
-.app{display:grid;grid-template-columns:250px 1fr 400px;height:100vh;overflow:hidden}
+.app{display:grid;grid-template-columns:52px 1fr 400px;height:100vh;overflow:hidden}
+.app.navopen{grid-template-columns:250px 1fr 400px}
+.navtoggle{background:none;border:1px solid var(--hair);color:var(--moss);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;margin-bottom:12px;transition:.14s}
+.navtoggle:hover{border-color:var(--crumb);color:var(--crumb)}
+.side.min{padding:16px 10px}
 .col{overflow-y:auto;height:100vh}
 .col::-webkit-scrollbar{width:7px}
 .col::-webkit-scrollbar-thumb{background:var(--mossl);border-radius:4px}
@@ -35,6 +39,11 @@ button{font-family:inherit}
 .qg-lab{font-family:var(--mono);font-size:9.5px;color:var(--crumb);letter-spacing:.05em;margin-bottom:4px}
 .qbtn{display:block;width:100%;text-align:left;background:var(--fog);border:1px solid var(--hair);border-radius:8px;padding:8px 10px;font-size:12.5px;color:var(--ink2);cursor:pointer;margin-bottom:4px;line-height:1.35;transition:.14s}
 .qbtn:hover{border-color:var(--crumb);color:var(--ink);background:#fff}
+/* Explore MOSAIC — compact topic list; questions surface as chips in the chat */
+.catlist{display:flex;flex-direction:column;gap:1px;margin-bottom:4px}
+.catbtn{display:block;width:100%;text-align:left;background:none;border:none;border-left:2px solid transparent;padding:7px 11px;font-size:12.5px;color:var(--ink2);cursor:pointer;border-radius:0 7px 7px 0;transition:.14s;line-height:1.3}
+.catbtn:hover{background:var(--fog);color:var(--ink)}
+.catbtn.on{background:var(--crumb-soft);border-left-color:var(--crumb);color:var(--ink);font-weight:500}
 
 /* CHAT */
 .chat{display:flex;flex-direction:column;background:var(--fog)}
@@ -46,9 +55,14 @@ button{font-family:inherit}
 .stream::-webkit-scrollbar{width:7px}
 .stream::-webkit-scrollbar-thumb{background:var(--mossl);border-radius:4px}
 
-.empty{text-align:center;padding:70px 20px;color:var(--moss)}
+.empty{text-align:center;padding:56px 20px;color:var(--moss)}
 .empty h3{font-size:22px;color:var(--ink);margin-bottom:8px}
 .empty p{font-size:14px;max-width:36ch;margin:0 auto}
+/* suggestion chips above the input bar */
+.chiprow{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:0 2px 10px}
+.chiprow-lab{font-family:var(--mono);font-size:10px;color:var(--crumb);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;flex:none}
+.qchip{background:var(--paper);border:1px solid var(--hair);border-radius:20px;padding:7px 13px;font-size:12px;color:var(--ink2);cursor:pointer;transition:.14s;line-height:1.3;text-align:left}
+.qchip:hover{border-color:var(--crumb);background:#fff;color:var(--ink)}
 
 .msg{margin-bottom:18px;animation:rise .4s ease both}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -113,26 +127,91 @@ button{font-family:inherit}
 .cbtn:hover{background:#b3781f}
 .cbtn:disabled{background:var(--mossl);cursor:not-allowed}
 
-/* GRAPH */
-.gcol{background:var(--deep);color:var(--fog);padding:18px 16px}
+/* GRAPH — always the green trail map (matches fullscreen; no color change on expand) */
+.gcol{background:radial-gradient(ellipse at 50% 32%,#c3d3b4 0%,#a7bd97 52%,#8aa37b 100%);color:#26331d;padding:18px 16px}
 .gh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
-.gh h3{font-size:15px;color:var(--fog)}
-.gh .gc{font-family:var(--mono);font-size:10px;color:var(--mossl)}
-.gsub{font-family:var(--mono);font-size:10px;color:#7d8a78;margin-bottom:14px}
+.gh h3{font-size:15px;color:#0e2f16}
+.gh .gc{font-family:var(--mono);font-size:10px;color:rgba(14,47,22,.6)}
+.gsub{font-family:var(--mono);font-size:10px;color:rgba(14,47,22,.6);margin-bottom:14px}
+.graphwrap{position:relative;display:flex}
 .graph{width:100%;height:auto;display:block}
-.gnode{cursor:pointer;transition:opacity .4s ease}
+.gnode{cursor:pointer;transition:transform .18s ease,opacity .4s ease;transform-origin:center;transform-box:fill-box}
+.gnode:hover{transform:scale(1.32)}
+.hoverhalo{opacity:0;transition:opacity .18s ease}
+.gnode:hover .hoverhalo{opacity:.22}
 .gedge{transition:opacity .4s ease,stroke .4s ease}
 .dim{opacity:.13}
-.glabel{font-family:var(--mono);font-size:7px;fill:#8a9686}
+/* the retrace trail: flowing amber breadcrumbs threading the matched markers */
+.trailpath{fill:none;stroke:var(--crumb);stroke-width:1.7;stroke-linecap:round;stroke-dasharray:.5 5.5;animation:crumbflow 1.1s linear infinite}
+.trailglow{fill:none;stroke:var(--crumb);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.16}
+@keyframes crumbflow{to{stroke-dashoffset:-12}}
+.glabel{font-family:var(--mono);font-size:6.5px;fill:#0f3417;pointer-events:none;opacity:0;transition:opacity .18s ease}
+.gnode:hover .glabel{opacity:1}
+.glabel.lit{fill:#7a4400;opacity:1}
+/* illustrated terrain under the trail */
+.contour{fill:none;stroke:#1c5a2e;stroke-width:.7;opacity:.42}
+.pine{opacity:1}
+/* fullscreen map — bright neon-green field, dark ink for contrast */
+.graph.large .glabel{opacity:.92;fill:#0f3417}
+.graph.large .glabel.lit{fill:#7a4400}
+.graph.large .contour{opacity:.5;stroke:#1c5a2e;stroke-width:.8}
+.graph.large .pine{opacity:1}
+.graph.large .gnode:hover .glabel{opacity:1}
+
+/* expand-to-fullscreen */
+.gh-r{display:flex;align-items:center;gap:10px}
+.gexpand{background:rgba(14,47,22,.1);border:1px solid rgba(14,47,22,.28);color:#0e2f16;height:26px;padding:0 11px;border-radius:8px;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.02em;line-height:1;display:flex;align-items:center;gap:6px;transition:.15s}
+.gexpand:hover{background:var(--crumb);border-color:var(--crumb);color:#fff}
+.gexpand-ic{font-size:14px;line-height:1}
+.trailmodal{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at 46% 36%,#c3d3b4 0%,#a7bd97 48%,#8aa37b 100%);animation:fin .22s ease}
+.tm-inner{position:absolute;inset:0;display:flex;flex-direction:column;padding:0}
+.tm-head{position:absolute;top:20px;left:30px;z-index:2}
+.tm-head h3{font-size:23px;color:#0e2f16}
+.tm-head .gsub{margin:0;color:rgba(14,47,22,.72)}
+.tm-close{position:absolute;top:18px;right:22px;z-index:2;background:rgba(14,47,22,.14);border:1px solid rgba(14,47,22,.28);color:#0e2f16;font-size:16px;cursor:pointer;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.tm-close:hover{background:var(--crumb);border-color:var(--crumb);color:#fff}
+.tm-body{flex:1;min-height:0;display:flex;justify-content:center;align-items:center}
+.tm-body .graphwrap{height:92vh}
+.tm-body .graph{height:92vh;width:auto;max-width:95vw}
+.tm-legend{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;background:rgba(19,28,19,.55);border:1px solid rgba(231,235,227,.1);padding:9px 16px;border-radius:12px;backdrop-filter:blur(4px)}
+.tm-legend .lrow{margin:0;color:#e9efe3}
 .ring{animation:rp 1.9s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
 @keyframes rp{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:0;transform:scale(2.4)}}
-.legend{margin-top:16px;border-top:1px solid rgba(231,235,227,.12);padding-top:13px}
-.lrow{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10.5px;color:#a8b3a3;margin-bottom:7px}
+
+/* node hover card — the "prove the data is real" panel for the demo */
+.nodecard{position:fixed;z-index:60;
+  max-height:calc(100vh - 24px);overflow:auto;
+  background:#0C120C;border:1px solid rgba(231,235,227,.16);border-radius:11px;
+  padding:12px 13px;box-shadow:0 14px 40px rgba(0,0,0,.55);
+  animation:rise .16s ease both;text-align:left}
+.nodecard::-webkit-scrollbar{width:6px}
+.nodecard::-webkit-scrollbar-thumb{background:#2a332a;border-radius:4px}
+.nc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.nc-badge{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;
+  padding:2px 7px;border-radius:5px;font-weight:600}
+.nc-confirmed{background:#657262;color:#F2F4ED}
+.nc-in_progress{background:#3E7A5E;color:#F2F4ED}
+.nc-abandoned{background:#A7AFA2;color:#121A12}
+.nc-id{font-size:11px;color:var(--mossl)}
+.nc-q{font-size:12.5px;line-height:1.4;color:#E7EBE3;margin-bottom:9px}
+.nc-grid{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:10.5px;margin-bottom:9px}
+.nc-grid span{color:#7d8a78}
+.nc-grid b{color:#c5cebf;font-weight:500}
+.nc-eff{font-size:11.5px;line-height:1.4;color:#a8b3a3;border-left:2px solid #3d4a3f;padding-left:9px;margin-bottom:8px}
+.nc-rz{font-size:11px;line-height:1.4;color:#d8b98a;background:rgba(198,134,43,.1);
+  border-radius:6px;padding:6px 8px;margin-bottom:8px}
+.nc-json-lab{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#647062;margin-bottom:4px}
+.nc-json{font-size:10px;line-height:1.45;color:#8fa085;background:#070B07;border-radius:7px;
+  padding:9px 10px;margin:0;max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.nc-json::-webkit-scrollbar{width:6px}
+.nc-json::-webkit-scrollbar-thumb{background:#2a332a;border-radius:4px}
+.legend{margin-top:16px;border-top:1px solid rgba(14,47,22,.18);padding-top:13px}
+.lrow{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10.5px;color:rgba(14,47,22,.78);margin-bottom:7px}
 .lrow span.d{width:10px;height:10px;border-radius:50%;flex:none}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
-.stat{background:rgba(231,235,227,.05);border-radius:8px;padding:9px 10px}
-.stat b{display:block;font-family:var(--display);font-size:19px;color:var(--fog)}
-.stat span{font-family:var(--mono);font-size:9px;color:#8a9686}
+.stat{background:rgba(14,47,22,.08);border-radius:8px;padding:9px 10px}
+.stat b{display:block;font-family:var(--display);font-size:19px;color:#0e2f16}
+.stat span{font-family:var(--mono);font-size:9px;color:rgba(14,47,22,.62)}
 
 /* sidebar "replay a run" buttons — a hist row that is actually clickable */
 .histbtn{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;cursor:pointer;font-family:inherit}
