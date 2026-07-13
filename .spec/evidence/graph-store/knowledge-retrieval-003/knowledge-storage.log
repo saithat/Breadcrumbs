@@ -1,0 +1,14 @@
+2026-07-12T15:24:25Z
+
+$ .venv/bin/python -m pytest tests/test_knowledge_memory.py -k storage -q
+........                                                                 [100%]
+8 passed, 14 deselected in 0.40s
+
+The storage checks cover:
+- approved aliases and typed conditions round-trip
+- FTS5 triggers remain synchronized
+- knowledge_embeddings is created on migration
+- a write persists model ID, dimensions, SHA-256 content hash, and float32 vector bytes
+- dense-only paraphrase recall uses the persisted vector
+- unrelated dense candidates below the fixed threshold are excluded
+- source re-ingest and drift behavior remains intact

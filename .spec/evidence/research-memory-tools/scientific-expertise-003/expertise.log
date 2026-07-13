@@ -1,0 +1,13 @@
+......                                                                   [100%]
+6 passed in 0.78s
+
+Fresh isolated Codex MCP presentation test
+- thread: 019f5754-1efb-7893-a059-694bc943813b
+- database: tracked ingestion/breadcrumbs.db
+- embeddings: disabled for deterministic lexical verification
+- call: find_experts(topic="TP53-mutant BLCA spatial immune and stromal architecture",
+  scope={"disease":"BLCA"})
+- result: only Roopal was returned, with p7_local_2 and p7_local_1 from sess-2027.
+- excluded: off-disease, low-coverage, Unknown, and AI-agent results.
+- presentation: compact table; stored adjusted p-values, n, abandonment reasons, IDs, and source
+  sessions; no dramatic framing, inferred biological conclusion, or unsolicited recommendation.

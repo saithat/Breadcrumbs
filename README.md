@@ -54,16 +54,48 @@ own schemas and templates, and the validator is a Python port so this stays a No
 ## Breadcrumbs MCP server
 
 The MCP server is a thin adapter over the same `ingestion/breadcrumbs.db` used by the ingestion
-pipeline. It does not create a second database or schema. It exposes five tools:
+pipeline. It does not create a second database or schema. It exposes ten tools:
 
-- `check_duplication(hypothesis_text, limit)` searches the internal findings graph and reports only
-  what was found there. General literature research remains the host agent's responsibility.
-- `write_finding(record)` validates and inserts one reviewed finding using the shared gate in
+- `check_duplication(hypothesis_text, limit)` searches the internal findings graph and returns the
+  UI-compatible `match | open` contract without calling an external literature service.
+- `write_finding(record)` validates and inserts one reviewed finding using
   `ingestion/write_findings.py`.
-- `recall_findings(query, limit)` returns locally matched internal findings and graph edges.
+- `recall_findings(query, limit)` retrieves related findings and their graph edges.
 - `render_wiki(finding_ids, title)` generates a cited, read-only Markdown view of the graph.
-- `read(column, value)` performs an allowlisted exact query for callers that already know a stored
-  field and canonical value.
+- `read(column, value)` performs an allowlisted, parameterized equality query against the
+  `findings` table.
+- `prepare_memory_diff(...)` takes a host-inferred proposition, rationale, and scope from ordinary
+  scientific dialogue. The agent passes only the exact relevant recent turns; Breadcrumbs stores
+  them as an idempotent content-addressed source snapshot, selects exact supporting evidence, and
+  returns deterministic prior/posterior packets plus approved model/run provenance. The researcher
+  is not asked to sync or supply transcript text, IDs, quotes, samples, a model, or a run ID. Source
+  capture does not create approved knowledge.
+- `score_surprise(...)` fits before/after Beta beliefs from repeated fixed-label judgments and
+  reports belief shift, `KL(posterior || prior)`, entropy change, and optional action divergence in
+  bits. The same samples always produce the same result.
+- `write_knowledge(record, approved_by)` persists a decision, constraint, exception, abandoned approach, or
+  belief revision only after named human approval supplied as a separate tool argument. The
+  evidence quote must occur verbatim in its ingested source message; approved aliases and typed
+  applicability conditions are optional; all metrics and action deltas are recomputed server-side.
+- `recall_knowledge(...)` fuses a local SQLite FTS5/BM25 index with exact-cosine dense retrieval
+  from a pinned 384-dimensional ONNX model, then adds deterministic field coverage and
+  condition-aware scope scoring. Vectors stay inside the local SQLite store with their model and
+  content hash. Unknown inferred scope fields do not erase candidates;
+  `strict_scope=true` is available for explicit exact-subset filtering. Superseded patches are
+  hidden by default but remain available for audit.
+- `find_experts(...)` aggregates source-linked authored knowledge and findings across canonical
+  provisional people. It caps repeated evidence per session, keeps abandoned work, excludes
+  review-only identities, and returns calibrated confidence plus the supporting artifacts rather
+  than asserting that somebody is definitively the organization's expert. Named researchers'
+  initial session questions are retrieved separately as `active_investigators`; this weak activity
+  signal can modestly enrich an already-demonstrated expert's score but never creates expertise by
+  itself.
+
+Session identity is provenance-backed. `session_identity_candidates` records accepted direct
+`chat_sessions.researcher` metadata separately from proposed artifact-author and exact-question
+evidence, with canonical JSON and a SHA256 digest. Proposed candidates never rewrite session
+ownership or create `person_investigations`; production deployments should supply the authenticated
+organization actor during ingestion rather than infer identity from writing style.
 
 Install and run over stdio:
 
@@ -79,17 +111,23 @@ BREADCRUMBS_TRANSPORT=http .venv/bin/breadcrumbs-mcp
 ```
 
 The HTTP MCP endpoint is `http://127.0.0.1:8000/mcp`; health is available at `/health`.
-Set `BREADCRUMBS_DB` to override the default `ingestion/breadcrumbs.db` path.
+The backend exposes equivalent REST seams at `/check_duplication`, `/knowledge/prepare`,
+`/knowledge/score`, `/knowledge`, `/knowledge/recall`, and `/experts/find`. The current browser demo
+uses only the duplication seam; interaction knowledge and evidence-backed expertise remain agent
+host capabilities. The checked public contract is generated at `schema/mcp_contracts.schema.json`.
+Set `BREADCRUMBS_DB` to override the default `ingestion/breadcrumbs.db` path. Dense retrieval is
+enabled by default with `BAAI/bge-small-en-v1.5`; set `BREADCRUMBS_EMBEDDINGS=0` to disable it or
+`BREADCRUMBS_EMBEDDING_MODEL` to an explicitly reviewed local FastEmbed model. The first start
+downloads the public model; subsequent inference is local to the host or organization.
 
 The MCP accepts `created_at` and `source_session` as read aliases for the physical
 `timestamp` and `source_session_id` columns. Writes use the reviewed extraction shape in
-`schema/example_finding_extraction.json`; `id` and `created_at` are optional. The checked public
-contract is generated at `schema/mcp_contracts.schema.json`, and the UI-compatible HTTP seam is
-`POST http://127.0.0.1:8000/check_duplication`.
+`schema/example_finding_extraction.json`; `id` and `created_at` are optional for MCP writes.
 
 The server publishes initialization and tool guidance telling agents when to read and write,
-how to summarize confirmed/in-progress/abandoned work, and how to avoid novelty or causality
-overclaims. For proactive use in Claude, upload the intent-named skill under
+how to prepare an interaction-grounded Memory Diff without asking the researcher for provenance
+plumbing, how to summarize confirmed/in-progress/abandoned work, and how to avoid novelty or
+causality overclaims. For proactive use in Claude, upload the intent-named skill under
 `skills/check-internal-biomedical-research-memory/`.
 
 ## Get the chat ingestor running

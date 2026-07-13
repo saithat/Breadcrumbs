@@ -27,6 +27,7 @@ def connect(db_path: Path | str = DEFAULT_DB_PATH) -> sqlite3.Connection:
     _migrate_graph_vocabulary(connection)
     _migrate_findings(connection)
     _migrate_chat_tables(connection)
+    _migrate_knowledge_tables(connection)
     return connection
 
 
@@ -170,6 +171,84 @@ def _migrate_chat_tables(connection: sqlite3.Connection) -> None:
                 connection.execute(f"ALTER TABLE {table} ADD COLUMN {name} {definition}")
     connection.execute(
         "CREATE INDEX IF NOT EXISTS idx_chat_message_sections_parent ON chat_message_sections(parent_id)"
+    )
+
+
+def _migrate_knowledge_tables(connection: sqlite3.Connection) -> None:
+    """Add retrieval fields and synchronize the derived FTS5 index without rebuilding authority."""
+
+    existing = {row[1] for row in connection.execute("PRAGMA table_info(knowledge_items)")}
+    additions = {
+        "aliases": "TEXT NOT NULL DEFAULT '[]'",
+        "conditions": "TEXT NOT NULL DEFAULT '[]'",
+    }
+    for name, definition in additions.items():
+        if name not in existing:
+            connection.execute(f"ALTER TABLE knowledge_items ADD COLUMN {name} {definition}")
+
+    connection.execute(
+        """
+        CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_fts USING fts5(
+            item_id UNINDEXED,
+            proposition,
+            rationale,
+            scope,
+            aliases,
+            conditions,
+            evidence_quote,
+            action_after,
+            reason,
+            tokenize = 'unicode61 remove_diacritics 2'
+        )
+        """
+    )
+    for trigger in ("knowledge_fts_ai", "knowledge_fts_ad", "knowledge_fts_au"):
+        connection.execute(f"DROP TRIGGER IF EXISTS {trigger}")
+    connection.executescript(
+        """
+        CREATE TRIGGER knowledge_fts_ai AFTER INSERT ON knowledge_items BEGIN
+            INSERT INTO knowledge_fts(
+                item_id, proposition, rationale, scope, aliases, conditions,
+                evidence_quote, action_after, reason
+            ) VALUES (
+                new.id, new.proposition, new.rationale, new.scope, new.aliases, new.conditions,
+                new.evidence_quote, COALESCE(new.action_after, ''), COALESCE(new.reason, '')
+            );
+        END;
+
+        CREATE TRIGGER knowledge_fts_ad AFTER DELETE ON knowledge_items BEGIN
+            DELETE FROM knowledge_fts WHERE item_id = old.id;
+        END;
+
+        CREATE TRIGGER knowledge_fts_au AFTER UPDATE ON knowledge_items BEGIN
+            DELETE FROM knowledge_fts WHERE item_id = old.id;
+            INSERT INTO knowledge_fts(
+                item_id, proposition, rationale, scope, aliases, conditions,
+                evidence_quote, action_after, reason
+            ) VALUES (
+                new.id, new.proposition, new.rationale, new.scope, new.aliases, new.conditions,
+                new.evidence_quote, COALESCE(new.action_after, ''), COALESCE(new.reason, '')
+            );
+        END;
+        """
+    )
+    connection.execute(
+        "DELETE FROM knowledge_fts WHERE item_id NOT IN (SELECT id FROM knowledge_items)"
+    )
+    connection.execute(
+        """
+        INSERT INTO knowledge_fts(
+            item_id, proposition, rationale, scope, aliases, conditions,
+            evidence_quote, action_after, reason
+        )
+        SELECT
+            k.id, k.proposition, k.rationale, k.scope, k.aliases, k.conditions,
+            k.evidence_quote, COALESCE(k.action_after, ''), COALESCE(k.reason, '')
+        FROM knowledge_items k
+        WHERE NOT EXISTS (
+            SELECT 1 FROM knowledge_fts f WHERE f.item_id = k.id
+        )
+        """
     )
 
 

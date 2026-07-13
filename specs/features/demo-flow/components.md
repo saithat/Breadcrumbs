@@ -15,3 +15,4 @@
 | BC-DEMO-005 | Generated read-only wiki page | not-built |
 | BC-DEMO-006 | Cross-indication graph visual (P2) | not-built |
 | BC-DEMO-007 | Backup demo video, under five minutes | not-built |
+| BC-DEMO-008 | Memory Diff — inspect source, surprise, and action change before approval | built-at-parity |

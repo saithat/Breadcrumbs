@@ -71,6 +71,19 @@
       "reviewPath": ".spec/evidence/demo-flow/pending/demo-video.md",
       "satisfied": false,
       "summary": ""
+    },
+    {
+      "id": "REQ-008",
+      "kind": "command",
+      "detail": "Production UI build includes the human-gated Memory Diff surface and keeps the illustrative fixture non-writable",
+      "command": "npm --prefix ui run build",
+      "cwd": ".",
+      "startedAt": "2026-07-12T07:53:00Z",
+      "finishedAt": "2026-07-12T07:54:06Z",
+      "logPath": ".spec/evidence/demo-flow/memory-diff-001/ui-build.log",
+      "artifactHash": "",
+      "satisfied": true,
+      "summary": "Production build and lint passed; the responsive review exposes source and metrics while keeping its unlogged illustrative fixture non-writable."
     }
   ],
   "complete": false

@@ -4,7 +4,7 @@
   "feature_owner": "Builder 1",
   "business_process": "Run one real survival stratification on a TCGA slice and turn it into a provenance-tagged finding object the graph can accept.",
   "status": "planned",
-  "data_classification": "internal",
+  "data_classification": "public",
   "layers": ["backend"],
   "component_ids": [
     "BC-ANLY-001",

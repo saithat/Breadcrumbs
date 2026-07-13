@@ -1,0 +1,11 @@
+2026-07-12T15:48:48Z
+
+$ BREADCRUMBS_EMBEDDINGS=0 .venv/bin/python -m pytest tests/test_expertise.py -k storage -q
+.                                                                        [100%]
+1 passed, 2 deselected
+
+Verified:
+- NFKC, whitespace, and case-normalized names produce one stable provisional person ID
+- four knowledge authors, four knowledge reviewers, and one finding author produce distinct role-labelled edges
+- deleting the derived people/contribution view and reopening the MCP store backfills three people and nine edges
+- backfill is idempotent and does not rewrite authoritative findings or knowledge

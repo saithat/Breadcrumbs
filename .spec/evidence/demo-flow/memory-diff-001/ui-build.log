@@ -1,0 +1,14 @@
+Command: npm --prefix ui run build
+Result: Next.js 16.2.10 production build compiled, TypeScript passed, and 6 static pages generated.
+Routes verified: /, /api/check_duplication, /api/knowledge
+Exit code: 0
+
+Additional checks:
+- npm --prefix ui run lint: exit 0
+- The review component renders the exact source quote, before/after belief, Bayesian surprise,
+  certainty gain, action surprise, and structured action delta in separate responsive grids.
+- The checked-in fixed samples are visibly marked illustrative. `Live elicitation required` is
+  disabled for that fixture; only a candidate carrying `elicitation.status = observed`, an approved
+  model, and a run ID can invoke the real approval route.
+- Reviewer identity is attached by the approval event, not carried inside the model candidate, and
+  the API has no mock-success write path.

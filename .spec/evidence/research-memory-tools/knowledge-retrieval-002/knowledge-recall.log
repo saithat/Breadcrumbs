@@ -1,0 +1,17 @@
+Command: .venv/bin/python -m pytest tests/test_knowledge_memory.py -k recall -q
+Run at: 2026-07-12T13:53:40Z
+
+...                                                                      [100%]
+3 passed, 18 deselected in 0.19s
+
+Coverage includes soft scope applicability, typed numeric conditions, approved alias and BM25
+retrieval, strict-scope opt-in, active patch resolution, historical aliases, and audit history.
+
+Fresh-host check:
+- Host: Codex 0.144.1, new ephemeral thread 019f569a-038f-7ed1-be17-5d2e7e061ecf
+- Database: isolated synthetic /tmp/breadcrumbs-fresh-retrieval-v3.db
+- Query scope chosen by the fresh host: {"assay":"Assay X","buffer_pH":6.5}
+- Result: K-CF92E5D7C2B9 returned through MCP without manual approval
+- Applicability: assay and buffer_pH compatible, no incompatible or unknown fields, score 1.0
+- Host conclusion: recommend Protocol B because 6.5 satisfies the approved buffer_pH < 7.0
+  condition and Protocol A had caused unstable fluorescence.

@@ -1,0 +1,18 @@
+.....                                                                    [100%]
+5 passed in 0.64s
+
+Fresh isolated Codex MCP test
+- thread: 019f5723-c1f1-71f1-8d3e-8395686d6660
+- user config: ignored
+- session storage: ephemeral
+- database: fresh synthetic SQLite store under /tmp
+- embeddings: disabled for a deterministic lexical fixture
+- calls:
+  - find_experts(topic="TP53 patient inference")
+  - find_experts(topic="chromatin accessibility pilot datasets")
+- TP53 result: Dr. Chen was the sole demonstrated expert, moderate confidence, with two primary
+  knowledge artifacts and two separately labelled relevant investigation sessions.
+- Chromatin result: experts was empty; Dr. Patel appeared only under active_investigators from one
+  exact source question, with signal_is_expertise=false.
+- The fresh agent preserved provisional-identity and sources-searched calibration and explicitly
+  stated that investigation activity alone does not establish expertise.

@@ -4,7 +4,7 @@
   "owners": [
     "Breadcrumbs team"
   ],
-  "data_classification": "confidential",
+  "data_classification": "public",
   "layers": [
     "contract",
     "database",

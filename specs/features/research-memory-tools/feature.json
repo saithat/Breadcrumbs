@@ -2,9 +2,9 @@
   "feature_id": "research-memory-tools",
   "title": "Research Memory Tools",
   "feature_owner": "Builder 2",
-  "business_process": "Before a researcher runs a hypothesis, check the org's own graph — including abandoned attempts — and report only the internal sources searched. General literature research remains with the host agent.",
+  "business_process": "Before a researcher runs a hypothesis, check the org's own graph — including abandoned attempts and approved interaction knowledge — and report what was found in calibrated language. General literature research remains with the host agent.",
   "status": "in_progress",
-  "data_classification": "confidential",
+  "data_classification": "public",
   "layers": ["contract", "backend"],
   "component_ids": [
     "BC-MCP-001",
@@ -16,12 +16,17 @@
     "BC-MCP-007",
     "BC-MCP-008",
     "BC-LIT-001",
-    "BC-MCP-009"
+    "BC-MCP-009",
+    "BC-MCP-010",
+    "BC-MCP-011",
+    "BC-MCP-012",
+    "BC-MCP-013",
+    "BC-MCP-014"
   ],
   "acceptance_criteria": [
     {
       "id": "REQ-001",
-      "text": "The MCP server starts, registers all five tools, and the host lists them.",
+      "text": "The MCP server starts, registers all ten tools, and the host lists them.",
       "coverage": "automated_check",
       "command": "python -m pytest tests/test_mcp_server.py -k registration"
     },
@@ -33,13 +38,13 @@
     },
     {
       "id": "REQ-003",
-      "text": "Duplication output is derived only from the internal graph and carries no external literature result field.",
+      "text": "Duplication results are derived only from the internal graph and contain no external literature result field.",
       "coverage": "automated_check",
-      "command": "python -m pytest tests/test_mcp_server.py -k internal_first"
+      "command": "python -m pytest tests/test_mcp_server.py -k internal_graph"
     },
     {
       "id": "REQ-004",
-      "text": "Two phrasings of the same hypothesis return UI verdict 'match'; an unrelated hypothesis returns 'open'.",
+      "text": "Two phrasings of the same hypothesis return 'match'; an unrelated hypothesis returns 'open'.",
       "coverage": "automated_check",
       "command": "python -m pytest tests/test_mcp_server.py -k semantic_match"
     },
@@ -69,7 +74,7 @@
     },
     {
       "id": "REQ-009",
-      "text": "The MCP has no external literature client, cache table, or literature result field.",
+      "text": "The MCP has no external literature client, cache table, or literature result field; literature research remains with the host.",
       "coverage": "automated_check",
       "command": "python -m pytest tests/test_mcp_server.py -k no_external_literature"
     },
@@ -85,6 +90,36 @@
       "coverage": "manual_review",
       "reviewer": "Biologist 2",
       "evidence": "review-note"
+    },
+    {
+      "id": "REQ-012",
+      "text": "Fixed prior/posterior fixtures produce stable belief-shift, Bayesian-surprise, entropy, and optional action-divergence values without third-party numerical dependencies.",
+      "coverage": "automated_check",
+      "command": "python -m pytest tests/test_surprise.py"
+    },
+    {
+      "id": "REQ-013",
+      "text": "write_knowledge takes reviewer identity from a separate approval event and rejects missing approval, unlogged or unapproved-model elicitations, unknown source messages, non-verbatim evidence, abandoned items without a reason, conflicting retries, and branching patches without changing the approved row.",
+      "coverage": "automated_check",
+      "command": "python -m pytest tests/test_knowledge_memory.py -k gate"
+    },
+    {
+      "id": "REQ-014",
+      "text": "recall_knowledge fuses local FTS5/BM25 and dense exact-cosine rankings with reciprocal rank fusion, treats inferred scope as compatible/incompatible/unknown applicability unless strict_scope is explicitly requested, evaluates typed numeric conditions, searches approved aliases, reports the embedding model and score components, resolves historical wording to the active patch, and excludes superseded items by default.",
+      "coverage": "automated_check",
+      "command": "python -m pytest tests/test_knowledge_memory.py -k recall"
+    },
+    {
+      "id": "REQ-015",
+      "text": "find_experts ranks canonical people from source-linked relevant knowledge and findings using deterministic role weights and a per-session cap, separately returns named active investigators, excludes review-only, investigator-only, non-person, off-disease, and low-coverage matches from demonstrated experts, retains abandoned evidence, exposes all score components and citations, and uses concise evidence-score language without unsupported interpretation.",
+      "coverage": "automated_check",
+      "command": "python -m pytest tests/test_expertise.py"
+    },
+    {
+      "id": "REQ-016",
+      "text": "prepare_memory_diff lets the host derive any number of distinct, independently reviewable Memory Diffs from relevant exact live turns without asking the researcher to sync or provide conversation text, message IDs, exact quotes, belief samples, an elicitation model, or a run ID. Calls over identical context reuse one content-addressed source snapshot while distinct candidates receive separate deterministic drafts, evidence, before/after packets, provenance, and write templates. Before research, web lookup, or response, host instructions require a turn-level check for explicit corrections, decisions, constraints, exceptions, abandoned approaches, and belief revisions; a settled correction remains independently reviewable even when its replacement choice is unresolved. The host deduplicates overlapping propositions and presents a default review batch of three without treating it as an extraction or persistence cap; no candidate becomes a knowledge item before its own explicit approval.",
+      "coverage": "automated_check",
+      "command": "PYTHONPATH=src .venv/bin/python -m unittest tests.test_memory_diff_preparation"
     }
   ],
   "evidence_required": ["tests"],
@@ -98,7 +133,14 @@
       "WriteFindingInput",
       "RecallFindingsInput",
       "RecallFindingsResult",
-      "RenderWikiInput"
+      "RenderWikiInput",
+      "SurpriseInput",
+      "MemoryDiffPreparationInput",
+      "MemoryDiffPreparationResult",
+      "KnowledgeCandidate",
+      "KnowledgeRecallInput",
+      "ExpertLookupInput",
+      "ExpertLookupResult"
     ],
     "enums": ["match", "open"]
   },
@@ -110,7 +152,12 @@
       { "method": "POST", "path": "/mcp/tools/check_duplication" },
       { "method": "POST", "path": "/mcp/tools/write_finding" },
       { "method": "POST", "path": "/mcp/tools/recall_findings" },
-      { "method": "POST", "path": "/mcp/tools/render_wiki" }
+      { "method": "POST", "path": "/mcp/tools/render_wiki" },
+      { "method": "POST", "path": "/mcp/tools/prepare_memory_diff" },
+      { "method": "POST", "path": "/mcp/tools/score_surprise" },
+      { "method": "POST", "path": "/mcp/tools/write_knowledge" },
+      { "method": "POST", "path": "/mcp/tools/recall_knowledge" },
+      { "method": "POST", "path": "/mcp/tools/find_experts" }
     ]
   },
   "open_questions": []

@@ -68,6 +68,120 @@
       "expected": ["The result reports only the internal graph", "No external literature cache table or client is required"],
       "linked_requirements": ["REQ-009"],
       "evidence_required": ["command-log"]
+    },
+    {
+      "id": "SCN-005",
+      "title": "A surprising interaction becomes approved organizational knowledge",
+      "kind": "happy_path",
+      "mode": "public",
+      "description": "A researcher states corrections or decisions naturally. The host infers distinct source-supported knowledge candidates, deduplicates overlapping propositions, and Breadcrumbs supplies separate exact evidence, before/after context, and reproducible elicitation protocols. Candidates are presented in manageable batches and only individually approved scientific versions are persisted.",
+      "preconditions": ["The host can pass the relevant recent conversation turns to the MCP tool"],
+      "steps": [
+        "Before continuing analysis or web lookup, inspect the newest user turn and its immediately relevant context for an explicit knowledge-changing statement",
+        "Infer every distinct candidate that changes a future belief or action, and deduplicate semantically overlapping propositions",
+        "For each candidate, call prepare_memory_diff with its proposition, rationale, scope, optional kind, and exact relevant live turns",
+        "Run each candidate's returned fixed-label prior and posterior elicitation packets for the specified replicate count, then call score_surprise with those generated samples",
+        "Show a manageable review batch, defaulting to three candidates, with a separate proposition, exact quote, action change, and calculated metrics for each",
+        "After each candidate's explicit approval, call write_knowledge separately",
+        "Recall it in a fresh session using its topic and scope"
+      ],
+      "expected": [
+        "A settled correction is prepared for review immediately even when its replacement choice remains unresolved",
+        "The researcher is never asked to sync, transcribe, identify, or quote the thread, or to provide belief samples, model metadata, or a run ID",
+        "The exact live turns are content-addressed once, and the prior context excludes the selected evidence while the posterior context includes it",
+        "Multiple distinct candidates over the same exact live context reuse one source snapshot but receive separate deterministic drafts",
+        "The default review batch size does not prevent additional distinct candidates from being queued and reviewed later",
+        "Approving or skipping one candidate has no persistence effect on any other candidate in the batch",
+        "The score is reproducible from the stored samples",
+        "The stored metrics are server-calculated rather than caller-supplied",
+        "Recall returns the approved item with source provenance even when the fresh host adds an unknown inferred scope key",
+        "A numeric query value satisfying a stored typed condition is reported as compatible"
+      ],
+      "linked_requirements": ["REQ-012", "REQ-013", "REQ-014", "REQ-016"],
+      "evidence_required": ["command-log"]
+    },
+    {
+      "id": "SCN-006",
+      "title": "A later correction supersedes but does not erase prior knowledge",
+      "kind": "edge_case",
+      "mode": "public",
+      "description": "Continual organizational memory is an append-only patch sequence: a newly approved belief revision points to the prior item rather than overwriting its evidence.",
+      "preconditions": ["An approved knowledge item already exists"],
+      "steps": [
+        "Approve a belief_revision with supersedes_id pointing at the prior item",
+        "Recall active knowledge",
+        "Recall again with include_superseded enabled"
+      ],
+      "expected": [
+        "Default recall returns only the new active patch",
+        "Audit recall returns both versions and their link"
+      ],
+      "linked_requirements": ["REQ-013", "REQ-014"],
+      "evidence_required": ["command-log"]
+    },
+    {
+      "id": "SCN-007",
+      "title": "A fresh agent retrieves a differently worded scoped decision",
+      "kind": "edge_case",
+      "mode": "public",
+      "description": "The host paraphrases an approved decision and invents a plausible method key while asking about pH 6.5. Dense retrieval must bridge the wording change, and unknown inferred scope must not erase the relevant patch.",
+      "preconditions": ["An approved synthetic decision is indexed by FTS5 and the pinned local embedding model"],
+      "steps": [
+        "From a fresh host, call recall_knowledge with the assay, buffer_pH 6.5, and an unstored method key",
+        "Inspect the retrieval components and scope compatibility"
+      ],
+      "expected": [
+        "The active patch is returned from local retrieval",
+        "buffer_pH is compatible and method is unknown rather than exclusionary",
+        "The result exposes its BM25, dense, rank-fusion, token, and applicability components"
+      ],
+      "linked_requirements": ["REQ-014"],
+      "evidence_required": ["command-log"]
+    },
+    {
+      "id": "SCN-008",
+      "title": "A fresh agent identifies demonstrated topic expertise with evidence",
+      "kind": "happy_path",
+      "mode": "public",
+      "description": "The host asks who has expertise in or is investigating a topic. Breadcrumbs aggregates authored decisions, findings, and abandoned work across independent sessions while separately surfacing named session owners, without turning reviewer activity, a single question, or message volume into an unsupported expert claim.",
+      "preconditions": ["Canonical provisional people have source-linked contributions and named research sessions"],
+      "steps": [
+        "Call find_experts with a natural-language topic and optional scope",
+        "Inspect the ranked people, confidence, score components, and cited evidence"
+      ],
+      "expected": [
+        "The person with stronger independent primary evidence ranks first",
+        "Named relevant session owners appear separately as active investigators even without primary evidence",
+        "Investigation activity alone never creates a demonstrated expert",
+        "Repeated work in one session is capped and review-only or non-person identities are excluded",
+        "Explicit disease scope excludes off-disease findings and low-coverage incidental matches",
+        "Abandoned work is retained as evidence",
+        "The response is concise, limited to stored evidence, and makes no organizational-title or unsupported biological claim"
+      ],
+      "linked_requirements": ["REQ-015"],
+      "evidence_required": ["command-log"]
+    },
+    {
+      "id": "SCN-009",
+      "title": "A natural correction is captured and yields a reproducible Memory Diff packet",
+      "kind": "happy_path",
+      "mode": "public",
+      "description": "The host converts ordinary scientific dialogue into a reviewable candidate without turning provenance plumbing into a researcher form.",
+      "preconditions": ["The correction and its relevant context are visible to the host agent"],
+      "steps": [
+        "Choose one distinct candidate from the pending review queue for this per-candidate preparation scenario",
+        "Call prepare_memory_diff with exact relevant live turns but without source identifiers, a quote, samples, a model, or a run ID",
+        "Repeat the same call and inspect the selected source, alternatives, and elicitation packets",
+        "Inspect the database before any approval write"
+      ],
+      "expected": [
+        "Both calls reuse one content-addressed source snapshot and return the same exact source span, deterministic run ID, and bounded candidate ordering",
+        "The returned prior packet excludes the selected evidence and the posterior packet adds it while keeping the proposition and fixed labels identical",
+        "The result contains source provenance, an authenticated actor hint when available or an explicit missing-author field otherwise, and a partial write template but no fabricated judgments",
+        "Preparation stores only raw source provenance; no knowledge row is created before explicit approval"
+      ],
+      "linked_requirements": ["REQ-016"],
+      "evidence_required": ["command-log"]
     }
   ],
   "holdout_suites": []

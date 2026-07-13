@@ -1,0 +1,38 @@
+Breadcrumbs live-context capture verification
+Run: live-context-002
+Date: 2026-07-12T19:49:53Z
+
+$ PYTHONPATH=src .venv/bin/python -m unittest tests.test_memory_diff_preparation
+.......
+----------------------------------------------------------------------
+Ran 7 tests
+
+OK
+
+Covered:
+- exact visible live turns captured without a prior sync or source identifier
+- content-addressed LIVE session and message IDs are stable across retries
+- exact user decision selected with source hash and character offsets
+- prior context excludes the evidence and posterior context includes it
+- preparation stores raw source provenance but creates no knowledge row
+- explicit approval writes the decision and a fresh store recalls it
+- live_context cannot be combined with an already-stored source_session_id
+
+$ PYTHONPATH=src .venv/bin/python -m pytest
+collected 124 items
+124 passed, 1 warning in 3.10s
+
+$ PYTHONPATH=src .venv/bin/python scripts/setupref_validate.py
+OK — spec tree valid (0 warning(s))
+
+$ UV_CACHE_DIR=/tmp/biohack-uv-cache uv lock --check
+Resolved 68 packages
+
+$ cd ui && npm run build
+Compiled successfully; TypeScript and static page generation completed.
+
+Artifact SHA256:
+- tests/test_memory_diff_preparation.py: bd7dea030d0f0725c83581c62069064bb12b32579fb76a425efa198e45de4368
+- src/breadcrumbs/store.py: 6aba6044c1459c8b1df966a5ce5ef1dd34aa38624c1c54bdccd51672a256bec1
+- schema/mcp_contracts.schema.json: 150e91e66e3fe6cecc76ded429df0bb519939faf9a85ac0512c8f8ec60b9493b
+- artifacts/check-internal-biomedical-research-memory.zip: 264c0fdc2060214ad39b26b23148a8439e5dfab5aa3de9e097666d472d2e5fe9

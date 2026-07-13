@@ -4,7 +4,7 @@
   "feature_owner": "Builder 2",
   "business_process": "Hold every internal finding — confirmed, in-progress, open, and abandoned — as the authoritative organizational record an AI scientist consults before running a hypothesis.",
   "status": "in_progress",
-  "data_classification": "confidential",
+  "data_classification": "public",
   "layers": ["contract", "database"],
   "component_ids": [
     "BC-GRAPH-001",
@@ -13,7 +13,9 @@
     "BC-GRAPH-004",
     "BC-GRAPH-005",
     "BC-GRAPH-006",
-    "BC-GRAPH-007"
+    "BC-GRAPH-007",
+    "BC-GRAPH-008",
+    "BC-GRAPH-009"
   ],
   "acceptance_criteria": [
     {
@@ -64,6 +66,18 @@
       "text": "A dataset's overview and table/column catalog, captured as page text from K Pro Explore Data, parses into datasets/dataset_columns rows, and re-ingesting one table's grid replaces only that table's columns.",
       "coverage": "automated_check",
       "command": "python -m pytest tests/test_dataset_catalog.py"
+    },
+    {
+      "id": "REQ-009",
+      "text": "An approved interaction-knowledge item round-trips with its source quote and hash, source message, approved aliases, typed applicability conditions, scoring samples, derived metrics, action delta, and optional supersedes link intact; its derived FTS5 row and model-versioned dense embedding stay synchronized; an unapproved or misquoted item is rejected, normal source-session re-ingest succeeds, re-ingest cannot silently remove an approved source, and same-ID content drift is flagged on recall.",
+      "coverage": "automated_check",
+      "command": "python -m pytest tests/test_knowledge_memory.py -k storage"
+    },
+    {
+      "id": "REQ-010",
+      "text": "Canonical provisional people use stable normalized identity keys; idempotent role-labelled contribution edges connect them to findings or approved knowledge; deterministic session identity evidence distinguishes accepted direct researcher metadata from proposed artifact-author and exact-question candidates; and only accepted named sessions produce investigation edges containing the exact initial research question.",
+      "coverage": "automated_check",
+      "command": "python -m pytest tests/test_expertise.py -k storage"
     }
   ],
   "evidence_required": ["tests"],
@@ -71,8 +85,8 @@
     "owner": "Builder 2",
     "status": "planned",
     "source": "schema/vocab.py",
-    "types": ["FindingStatus", "EdgeRelationship"],
-    "enums": ["confirmed", "in-progress", "abandoned", "open", "duplicate_of", "extends", "related", "contradicts"]
+    "types": ["FindingStatus", "EdgeRelationship", "KnowledgeKind"],
+    "enums": ["confirmed", "in-progress", "abandoned", "open", "duplicate_of", "extends", "related", "contradicts", "decision", "constraint", "exception", "belief_revision"]
   },
   "database": {
     "owner": "Builder 2",
@@ -144,6 +158,108 @@
           { "name": "possible_values", "type": "text" },
           { "name": "data_type", "type": "text" },
           { "name": "completeness_pct", "type": "real" }
+        ]
+      },
+      {
+        "name": "knowledge_items",
+        "columns": [
+          { "name": "id", "type": "text" },
+          { "name": "kind", "type": "text" },
+          { "name": "proposition", "type": "text" },
+          { "name": "rationale", "type": "text" },
+          { "name": "scope", "type": "text" },
+          { "name": "aliases", "type": "text" },
+          { "name": "conditions", "type": "text" },
+          { "name": "evidence_quote", "type": "text" },
+          { "name": "source_message_id", "type": "text" },
+          { "name": "source_message_hash", "type": "text" },
+          { "name": "source_session_id", "type": "text" },
+          { "name": "prior_samples", "type": "text" },
+          { "name": "posterior_samples", "type": "text" },
+          { "name": "elicitation_model", "type": "text" },
+          { "name": "elicitation_run_id", "type": "text" },
+          { "name": "scoring_method", "type": "text" },
+          { "name": "prior_mean", "type": "real" },
+          { "name": "posterior_mean", "type": "real" },
+          { "name": "belief_shift", "type": "real" },
+          { "name": "bayesian_surprise_bits", "type": "real" },
+          { "name": "prior_entropy_bits", "type": "real" },
+          { "name": "posterior_entropy_bits", "type": "real" },
+          { "name": "certainty_gain_bits", "type": "real" },
+          { "name": "action_before", "type": "text" },
+          { "name": "action_after", "type": "text" },
+          { "name": "action_delta", "type": "text" },
+          { "name": "prior_action_samples", "type": "text" },
+          { "name": "posterior_action_samples", "type": "text" },
+          { "name": "action_surprise_bits", "type": "real" },
+          { "name": "reason", "type": "text" },
+          { "name": "author", "type": "text" },
+          { "name": "approved_by", "type": "text" },
+          { "name": "supersedes_id", "type": "text" },
+          { "name": "created_at", "type": "text" }
+        ]
+      },
+      {
+        "name": "knowledge_embeddings",
+        "columns": [
+          { "name": "item_id", "type": "text" },
+          { "name": "model", "type": "text" },
+          { "name": "dimensions", "type": "integer" },
+          { "name": "content_hash", "type": "text" },
+          { "name": "vector", "type": "blob" },
+          { "name": "created_at", "type": "text" }
+        ]
+      },
+      {
+        "name": "people",
+        "columns": [
+          { "name": "id", "type": "text" },
+          { "name": "display_name", "type": "text" },
+          { "name": "normalized_name", "type": "text" },
+          { "name": "aliases", "type": "text" },
+          { "name": "org_unit", "type": "text" },
+          { "name": "identity_status", "type": "text" },
+          { "name": "created_at", "type": "text" },
+          { "name": "updated_at", "type": "text" }
+        ]
+      },
+      {
+        "name": "person_contributions",
+        "columns": [
+          { "name": "person_id", "type": "text" },
+          { "name": "artifact_type", "type": "text" },
+          { "name": "artifact_id", "type": "text" },
+          { "name": "role", "type": "text" },
+          { "name": "source_session_id", "type": "text" },
+          { "name": "created_at", "type": "text" }
+        ]
+      },
+      {
+        "name": "session_identity_candidates",
+        "columns": [
+          { "name": "session_id", "type": "text" },
+          { "name": "person_id", "type": "text" },
+          { "name": "candidate_name", "type": "text" },
+          { "name": "evidence_type", "type": "text" },
+          { "name": "evidence_strength", "type": "text" },
+          { "name": "status", "type": "text" },
+          { "name": "evidence", "type": "text" },
+          { "name": "evidence_hash", "type": "text" },
+          { "name": "created_at", "type": "text" },
+          { "name": "updated_at", "type": "text" }
+        ]
+      },
+      {
+        "name": "person_investigations",
+        "columns": [
+          { "name": "session_id", "type": "text" },
+          { "name": "person_id", "type": "text" },
+          { "name": "topic_message_id", "type": "text" },
+          { "name": "topic", "type": "text" },
+          { "name": "topic_message_hash", "type": "text" },
+          { "name": "scope", "type": "text" },
+          { "name": "created_at", "type": "text" },
+          { "name": "updated_at", "type": "text" }
         ]
       }
     ],

@@ -51,6 +51,52 @@
       ],
       "linked_requirements": ["REQ-006", "REQ-001", "REQ-002"],
       "evidence_required": ["command-log"]
+    },
+    {
+      "id": "SCN-004",
+      "title": "A conversation correction becomes an auditable patch only after approval",
+      "kind": "happy_path",
+      "mode": "public",
+      "description": "A model proposes a scoped constraint from a K Pro exchange, but the graph remains unchanged until a researcher approves the exact source-linked Memory Diff.",
+      "preconditions": ["The referenced K Pro message is ingested"],
+      "steps": [
+        "Submit the candidate without approved_by and observe rejection",
+        "Approve the same candidate with an exact evidence quote",
+        "Read the stored knowledge item back"
+      ],
+      "expected": [
+        "No row exists after the unapproved attempt",
+        "The approved row preserves its quote, source, aliases, typed conditions, samples, calculated metrics, and action delta",
+        "The derived FTS5 row is created only for the approved patch"
+      ],
+      "linked_requirements": ["REQ-009"],
+      "evidence_required": ["command-log"]
+    },
+    {
+      "id": "SCN-005",
+      "title": "Provenance creates canonical people, graded identity evidence, and activity edges",
+      "kind": "happy_path",
+      "mode": "public",
+      "description": "Existing author, reviewer, named-session, and exact-question provenance becomes an expertise/activity graph without guessing that contribution proves session ownership or that asking one question proves expertise.",
+      "preconditions": ["Reviewed findings or approved knowledge exist, and at least one chat session has a named researcher"],
+      "steps": [
+        "Connect to the store and backfill people/contributions",
+        "Extract direct, artifact-author, and exact-question identity evidence",
+        "Backfill each named session's first user question as an investigation edge",
+        "Write another item whose author differs only by case and whitespace",
+        "Inspect people, contribution edges, and investigation edges"
+      ],
+      "expected": [
+        "Case and whitespace variants share one stable provisional person ID",
+        "Authorship and review remain distinct roles",
+        "Direct researcher evidence is accepted while artifact-author and exact-question evidence remains proposed",
+        "Every identity candidate preserves deterministic hashed evidence",
+        "Investigation remains distinct from both roles and preserves the exact question",
+        "A blank researcher produces no investigation edge",
+        "Reconnecting does not duplicate contribution edges"
+      ],
+      "linked_requirements": ["REQ-010"],
+      "evidence_required": ["command-log"]
     }
   ],
   "holdout_suites": []

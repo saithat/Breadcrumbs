@@ -1,0 +1,28 @@
+2026-07-12T15:24:25Z
+
+$ .venv/bin/python -m pytest tests/test_knowledge_memory.py -k recall -q
+....                                                                     [100%]
+4 passed, 18 deselected in 0.38s
+
+Real local model smoke test
+- runtime: fastembed 0.8.0 / ONNX Runtime
+- model: BAAI/bge-small-en-v1.5
+- dimensions: 384
+- query: guidance for a proton-rich medium
+- stored decision: use Protocol B for synthetic Assay X when buffer pH < 7.0
+- field coverage: 0.0
+- BM25 rank: null
+- dense rank: 1
+- dense similarity: 0.616973
+- dense-only threshold: 0.55
+- rank fusion: 0.5
+
+Fresh isolated Codex MCP test
+- thread: 019f56ed-8b03-7210-9a1d-a937de0b3c01
+- user config: ignored
+- session storage: ephemeral
+- database: new synthetic SQLite store under /tmp
+- MCP call: recall_knowledge(query="guidance for a proton-rich medium", limit=3)
+- result: K-AEE112165D5E
+- recommendation: Protocol A -> Protocol B
+- MCP exposed the exact BM25, dense, model, threshold, and fusion components above.

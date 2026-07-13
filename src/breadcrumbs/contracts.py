@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.json_schema import models_json_schema
@@ -12,6 +12,14 @@ FindingStatus = Literal["confirmed", "in_progress", "abandoned"]
 StorageStatus = Literal["confirmed", "in-progress", "abandoned", "open"]
 Relationship = Literal["duplicate_of", "extends", "related", "contradicts"]
 DuplicationVerdict = Literal["match", "open"]
+KnowledgeKind = Literal["decision", "constraint", "exception", "abandoned", "belief_revision"]
+BeliefLabel = Literal[
+    "strongly_disbelieve",
+    "disbelieve",
+    "uncertain",
+    "believe",
+    "strongly_believe",
+]
 
 
 class ContractModel(BaseModel):
@@ -118,6 +126,78 @@ class RenderWikiResult(ContractModel):
     finding_ids: list[str]
 
 
+class LiveInteractionTurn(ContractModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=50000)
+    created_at: str | None = None
+
+
+class MemoryDiffPreparationInput(ContractModel):
+    proposition: str = Field(min_length=1)
+    rationale: str = Field(min_length=1)
+    scope: dict[str, Any]
+    kind: KnowledgeKind = "decision"
+    evidence_query: str | None = None
+    source_session_id: str | None = None
+    live_context: list[LiveInteractionTurn] | None = Field(
+        default=None, min_length=1, max_length=12
+    )
+    live_session_title: str | None = Field(default=None, max_length=240)
+    current_actor: str | None = None
+    elicitation_model: str = "claude-sonnet-5"
+    replicates: int = Field(default=5, ge=3, le=20)
+    context_chars: int = Field(default=6000, ge=1000, le=20000)
+    candidate_limit: int = Field(default=3, ge=1, le=5)
+    candidate_rank: int = Field(default=1, ge=1, le=5)
+
+
+class EvidenceCandidate(ContractModel):
+    rank: int = Field(ge=1)
+    source_message_id: str
+    source_session_id: str
+    source_message_hash: str
+    message_seq: int
+    role: Literal["user", "assistant"]
+    evidence_quote: str
+    quote_start: int = Field(ge=0)
+    quote_end: int = Field(ge=1)
+    relevance_score: float = Field(ge=0)
+    session_title: str | None = None
+    source_researcher: str | None = None
+
+
+class ElicitationPacket(ContractModel):
+    phase: Literal["prior", "posterior"]
+    proposition: str
+    context: str
+    context_truncated: bool
+    instruction: str
+    allowed_labels: list[BeliefLabel]
+
+
+class ElicitationProtocol(ContractModel):
+    model: str
+    run_id: str
+    replicates: int = Field(ge=3, le=20)
+    scoring_method: Literal["beta_fractional_jsd_v1"]
+    prior: ElicitationPacket
+    posterior: ElicitationPacket
+
+
+class MemoryDiffPreparationResult(ContractModel):
+    draft_id: str
+    source_origin: Literal["stored_interaction", "captured_live_context"]
+    captured_turn_count: int = Field(ge=0)
+    selected_evidence: EvidenceCandidate
+    evidence_candidates: list[EvidenceCandidate]
+    elicitation: ElicitationProtocol
+    author_hint: str | None
+    author_hint_source: Literal["authenticated_actor", "unavailable"]
+    record_template: dict[str, Any]
+    missing_record_fields: list[str]
+    selection_warning: str
+
+
 CONTRACT_MODELS = (
     CheckDuplicationInput,
     DuplicationResult,
@@ -126,6 +206,8 @@ CONTRACT_MODELS = (
     RecallFindingsResult,
     RenderWikiInput,
     RenderWikiResult,
+    MemoryDiffPreparationInput,
+    MemoryDiffPreparationResult,
 )
 
 

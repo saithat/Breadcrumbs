@@ -1,0 +1,8 @@
+Command: .venv/bin/python -m pytest tests/test_knowledge_memory.py -k gate -q
+Result: 10 passed, 8 deselected in 0.36s
+Exit code: 0
+
+Covered: separate named approval, approved-model/run provenance, known source message, verbatim
+evidence, abandoned reason, equal sampling, server-only calculated metrics, conflicting retry
+rejection, linear patch history, and parity with the repo's confidential-model allowlist. Failed
+candidates did not overwrite an approved row.

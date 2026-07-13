@@ -4,7 +4,7 @@
   "feature_owner": "Product/Pitch + Biologists",
   "business_process": "Show, in two sessions, that the org's own research memory — including its failures — reaches the next researcher before they repeat the work.",
   "status": "in_progress",
-  "data_classification": "internal",
+  "data_classification": "public",
   "layers": ["frontend"],
   "component_ids": [
     "BC-DEMO-001",
@@ -13,7 +13,8 @@
     "BC-DEMO-004",
     "BC-DEMO-005",
     "BC-DEMO-006",
-    "BC-DEMO-007"
+    "BC-DEMO-007",
+    "BC-DEMO-008"
   ],
   "acceptance_criteria": [
     {
@@ -62,6 +63,12 @@
       "coverage": "manual_review",
       "reviewer": "Product/Pitch",
       "evidence": "review-note"
+    },
+    {
+      "id": "REQ-008",
+      "text": "The production UI build includes a Memory Diff review that shows source evidence, calculated surprise, and action change before explicit approve or skip actions, has no mock-success write path, and prevents its illustrative unlogged fixture from entering authoritative memory.",
+      "coverage": "automated_check",
+      "command": "npm --prefix ui run build"
     }
   ],
   "evidence_required": ["tests", "screenshots"],
@@ -72,6 +79,7 @@
     "routes": [
       { "path": "/", "page": "RetraceChat" },
       { "path": "/api/check_duplication", "page": "CheckDuplicationRoute" },
+      { "path": "/api/knowledge", "page": "KnowledgeRoute" },
       { "path": "/wiki/{topic}", "page": "TopicWikiPage" },
       { "path": "/graph", "page": "CrossIndicationGraph" }
     ]

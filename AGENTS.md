@@ -72,10 +72,10 @@ enforces all three.
 `.spec/evidence/<feature-id>/<run-id>/` and record repo-relative paths and short summaries in
 `evidence.json`. (`.gitignore` has an explicit exception so these logs are committed despite `*.log`.)
 
-**Data boundary.** `data_classification` is `confidential` — this repo ingests real K Pro sessions.
-Route data only to models listed in `specConfig.approvedModels`. The open question of whether
-hypothesis text may go to the Claude API for semantic matching is **unresolved and blocking** — see
-`specs/features/research-memory-tools/review-queue.md` row 1.
+**Data boundary.** `data_classification` is `public`, as confirmed by the project owner on
+2026-07-12. Public research content may be routed to the pinned retrieval and elicitation models;
+model/run provenance must still be recorded. Authentication material remains secret: never expose
+or commit `ingestion/.secrets/`, cookies, tokens, or live session credentials.
 
 **Never commit `ingestion/.secrets/`.** It holds a live authenticated K Pro session — a real
 credential. `ingestion/breadcrumbs.db` and `ingestion/transcripts/` *are* tracked on purpose, so the team

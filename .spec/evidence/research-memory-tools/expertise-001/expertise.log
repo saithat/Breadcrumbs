@@ -1,0 +1,19 @@
+2026-07-12T15:48:48Z
+
+$ BREADCRUMBS_EMBEDDINGS=0 .venv/bin/python -m pytest tests/test_expertise.py -q
+...                                                                      [100%]
+3 passed
+
+Fresh isolated Codex MCP test
+- thread: 019f5703-f6ac-7f52-a6b8-64514cb7c07e
+- user config: ignored
+- session storage: ephemeral
+- database: fresh synthetic SQLite store under /tmp
+- model: BAAI/bge-small-en-v1.5, local FastEmbed/ONNX
+- call: find_experts(topic="patient-level TP53 inference", scope={"disease":"BLCA"})
+- result 1: Dr. Chen, moderate confidence, 2 independent sessions, score 2.052625
+- result 2: Dr. Alvarez, low confidence, 1 independent session, score 1.034127
+- repeated evidence from expert-s1 was capped to one session contribution
+- Dr. Chen's abandoned spot-count-only approach remained cited with its reason
+- reviewer-only Dr. Reviewer was excluded
+- the fresh agent repeated the calibration that this is evidence-backed, provisional, and not a definitive organizational title

@@ -1,0 +1,8 @@
+Command: .venv/bin/python -m pytest tests/test_knowledge_memory.py -k storage -q
+Run at: 2026-07-12T13:53:40Z
+
+.......                                                                  [100%]
+7 passed, 14 deselected in 0.29s
+
+Coverage includes approved alias and typed-condition round trips, FTS5 synchronization, pure
+ADD COLUMN migration from a legacy knowledge_items table, provenance, re-ingest, and drift checks.

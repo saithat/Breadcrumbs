@@ -66,6 +66,190 @@
       "title": "DuplicationResult",
       "type": "object"
     },
+    "ElicitationPacket": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_labels": {
+          "items": {
+            "enum": [
+              "strongly_disbelieve",
+              "disbelieve",
+              "uncertain",
+              "believe",
+              "strongly_believe"
+            ],
+            "type": "string"
+          },
+          "title": "Allowed Labels",
+          "type": "array"
+        },
+        "context": {
+          "title": "Context",
+          "type": "string"
+        },
+        "context_truncated": {
+          "title": "Context Truncated",
+          "type": "boolean"
+        },
+        "instruction": {
+          "title": "Instruction",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "prior",
+            "posterior"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "proposition": {
+          "title": "Proposition",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phase",
+        "proposition",
+        "context",
+        "context_truncated",
+        "instruction",
+        "allowed_labels"
+      ],
+      "title": "ElicitationPacket",
+      "type": "object"
+    },
+    "ElicitationProtocol": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "posterior": {
+          "$ref": "#/$defs/ElicitationPacket"
+        },
+        "prior": {
+          "$ref": "#/$defs/ElicitationPacket"
+        },
+        "replicates": {
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Replicates",
+          "type": "integer"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "scoring_method": {
+          "const": "beta_fractional_jsd_v1",
+          "title": "Scoring Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "run_id",
+        "replicates",
+        "scoring_method",
+        "prior",
+        "posterior"
+      ],
+      "title": "ElicitationProtocol",
+      "type": "object"
+    },
+    "EvidenceCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_quote": {
+          "title": "Evidence Quote",
+          "type": "string"
+        },
+        "message_seq": {
+          "title": "Message Seq",
+          "type": "integer"
+        },
+        "quote_end": {
+          "minimum": 1,
+          "title": "Quote End",
+          "type": "integer"
+        },
+        "quote_start": {
+          "minimum": 0,
+          "title": "Quote Start",
+          "type": "integer"
+        },
+        "rank": {
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "relevance_score": {
+          "minimum": 0,
+          "title": "Relevance Score",
+          "type": "number"
+        },
+        "role": {
+          "enum": [
+            "user",
+            "assistant"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "session_title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Title"
+        },
+        "source_message_hash": {
+          "title": "Source Message Hash",
+          "type": "string"
+        },
+        "source_message_id": {
+          "title": "Source Message Id",
+          "type": "string"
+        },
+        "source_researcher": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Researcher"
+        },
+        "source_session_id": {
+          "title": "Source Session Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rank",
+        "source_message_id",
+        "source_session_id",
+        "source_message_hash",
+        "message_seq",
+        "role",
+        "evidence_quote",
+        "quote_start",
+        "quote_end",
+        "relevance_score"
+      ],
+      "title": "EvidenceCandidate",
+      "type": "object"
+    },
     "FindingRelationship": {
       "additionalProperties": false,
       "properties": {
@@ -89,6 +273,43 @@
         "relationship"
       ],
       "title": "FindingRelationship",
+      "type": "object"
+    },
+    "LiveInteractionTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "maxLength": 50000,
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created At"
+        },
+        "role": {
+          "enum": [
+            "user",
+            "assistant"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "content"
+      ],
+      "title": "LiveInteractionTurn",
       "type": "object"
     },
     "Match": {
@@ -155,6 +376,229 @@
         "disease"
       ],
       "title": "Match",
+      "type": "object"
+    },
+    "MemoryDiffPreparationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_limit": {
+          "default": 3,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Candidate Limit",
+          "type": "integer"
+        },
+        "candidate_rank": {
+          "default": 1,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Candidate Rank",
+          "type": "integer"
+        },
+        "context_chars": {
+          "default": 6000,
+          "maximum": 20000,
+          "minimum": 1000,
+          "title": "Context Chars",
+          "type": "integer"
+        },
+        "current_actor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Current Actor"
+        },
+        "elicitation_model": {
+          "default": "claude-sonnet-5",
+          "title": "Elicitation Model",
+          "type": "string"
+        },
+        "evidence_query": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Query"
+        },
+        "kind": {
+          "default": "decision",
+          "enum": [
+            "decision",
+            "constraint",
+            "exception",
+            "abandoned",
+            "belief_revision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "live_context": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/LiveInteractionTurn"
+              },
+              "maxItems": 12,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Live Context"
+        },
+        "live_session_title": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Live Session Title"
+        },
+        "proposition": {
+          "minLength": 1,
+          "title": "Proposition",
+          "type": "string"
+        },
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "replicates": {
+          "default": 5,
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Replicates",
+          "type": "integer"
+        },
+        "scope": {
+          "additionalProperties": true,
+          "title": "Scope",
+          "type": "object"
+        },
+        "source_session_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Session Id"
+        }
+      },
+      "required": [
+        "proposition",
+        "rationale",
+        "scope"
+      ],
+      "title": "MemoryDiffPreparationInput",
+      "type": "object"
+    },
+    "MemoryDiffPreparationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "author_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Author Hint"
+        },
+        "author_hint_source": {
+          "enum": [
+            "authenticated_actor",
+            "unavailable"
+          ],
+          "title": "Author Hint Source",
+          "type": "string"
+        },
+        "captured_turn_count": {
+          "minimum": 0,
+          "title": "Captured Turn Count",
+          "type": "integer"
+        },
+        "draft_id": {
+          "title": "Draft Id",
+          "type": "string"
+        },
+        "elicitation": {
+          "$ref": "#/$defs/ElicitationProtocol"
+        },
+        "evidence_candidates": {
+          "items": {
+            "$ref": "#/$defs/EvidenceCandidate"
+          },
+          "title": "Evidence Candidates",
+          "type": "array"
+        },
+        "missing_record_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Record Fields",
+          "type": "array"
+        },
+        "record_template": {
+          "additionalProperties": true,
+          "title": "Record Template",
+          "type": "object"
+        },
+        "selected_evidence": {
+          "$ref": "#/$defs/EvidenceCandidate"
+        },
+        "selection_warning": {
+          "title": "Selection Warning",
+          "type": "string"
+        },
+        "source_origin": {
+          "enum": [
+            "stored_interaction",
+            "captured_live_context"
+          ],
+          "title": "Source Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "draft_id",
+        "source_origin",
+        "captured_turn_count",
+        "selected_evidence",
+        "evidence_candidates",
+        "elicitation",
+        "author_hint",
+        "author_hint_source",
+        "record_template",
+        "missing_record_fields",
+        "selection_warning"
+      ],
+      "title": "MemoryDiffPreparationResult",
       "type": "object"
     },
     "RecallFinding": {

@@ -1,0 +1,9 @@
+Command: .venv/bin/python -m pytest tests/test_knowledge_memory.py -k storage -q
+Result: 6 passed, 12 deselected in 0.33s
+Exit code: 0
+
+Covered: source-linked round trip with source hash and scoring/elicitation version, server-derived
+metrics/action delta, abandoned reason, idempotent retry, normal source-session re-ingest, explicit
+same-ID source drift, and rollback when re-ingest would remove an approved source.
+
+The complete suite also passed: 87 tests in 1.87s.

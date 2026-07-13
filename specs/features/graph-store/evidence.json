@@ -100,6 +100,32 @@
       "artifactHash": "",
       "satisfied": true,
       "summary": "4 passed: overview parses despite inconsistent blank-line spacing, available-tables list, column grid parse with partial-group drop, and scoped upsert round-trip."
+    },
+    {
+      "id": "REQ-009",
+      "kind": "command",
+      "detail": "Approved interaction knowledge, aliases, typed conditions, derived FTS5 row, and model-versioned dense vector round-trip across migration and normal re-ingest",
+      "command": "python -m pytest tests/test_knowledge_memory.py -k storage",
+      "cwd": ".",
+      "startedAt": "2026-07-12T15:24:24Z",
+      "finishedAt": "2026-07-12T15:24:25Z",
+      "logPath": ".spec/evidence/graph-store/knowledge-retrieval-003/knowledge-storage.log",
+      "artifactHash": "",
+      "satisfied": true,
+      "summary": "8 storage tests passed; aliases and typed conditions round-trip, FTS5 and model-versioned dense vectors stay synchronized, legacy stores gain retrieval tables without rebuild, and provenance/re-ingest drift guarantees remain intact."
+    },
+    {
+      "id": "REQ-010",
+      "kind": "command",
+      "detail": "Canonical people, graded hashed session identity evidence, role-labelled contributions, and confirmed source-quoted investigation edges backfill idempotently",
+      "command": "python -m pytest tests/test_expertise.py tests/test_session_identity.py",
+      "cwd": ".",
+      "startedAt": "2026-07-12T16:54:00Z",
+      "finishedAt": "2026-07-12T16:57:25Z",
+      "logPath": ".spec/evidence/graph-store/identity-population-003/identity.log",
+      "artifactHash": "014b7b2cca09430d198b74f187961bc30883653b03840300d347c4fa893df874",
+      "satisfied": true,
+      "summary": "8 identity and expertise tests passed. The tracked database contains 6 hashed identity-evidence rows: 2 accepted direct researcher records and 4 proposed artifact-author candidates; proposed evidence does not rewrite session ownership or create investigations, and foreign_key_check reports zero violations."
     }
   ],
   "complete": false

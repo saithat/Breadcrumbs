@@ -1,0 +1,16 @@
+Run: candidate-policy-001
+Finished: 2026-07-12T21:12:36Z
+
+Commands:
+  .venv/bin/python -m pytest tests/
+  .venv/bin/python scripts/setupref_validate.py
+  git diff --check
+  unzip -p artifacts/check-internal-biomedical-research-memory.zip check-internal-biomedical-research-memory/SKILL.md | cmp -s - skills/check-internal-biomedical-research-memory/SKILL.md
+
+Results:
+  125 tests passed; one third-party Starlette deprecation warning.
+  Spec tree valid with zero warnings.
+  Diff whitespace check passed.
+  Packaged skill exactly matches the repo skill.
+  Six distinct candidates over identical live context produced six deterministic draft IDs,
+  reused one content-addressed source session, and created zero knowledge_items before approval.

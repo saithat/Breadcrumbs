@@ -1,0 +1,11 @@
+2026-07-12 merge verification
+
+BREADCRUMBS_EMBEDDINGS=0 .venv/bin/python -m unittest discover -s tests -p 'test_*.py'
+Ran 115 tests in 3.571s
+OK
+
+.venv/bin/python scripts/setupref_validate.py
+OK — spec tree valid (0 warning(s))
+
+cd ui && npm run build
+Next.js production build compiled successfully; TypeScript passed; 6 static pages generated.

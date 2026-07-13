@@ -1,0 +1,25 @@
+Run: 2026-07-12T21:35:09Z
+
+Command:
+PYTHONPATH=src .venv/bin/python -m unittest discover -s tests
+
+Result:
+Ran 125 tests in 2.936s
+OK
+
+The MCP contract regression asserts that the turn-level write-back check appears before reading
+instructions, requires patch preparation before research or web lookup, treats a settled correction
+as independently reviewable, and gives prepare_memory_diff a correction-triggered tool description.
+The host-skill regression asserts the same trigger appears before its retrieval decision workflow.
+
+Command:
+.venv/bin/python scripts/setupref_validate.py
+
+Result:
+OK — spec tree valid (0 warning(s))
+
+Command:
+unzip -p artifacts/check-internal-biomedical-research-memory.zip check-internal-biomedical-research-memory/SKILL.md | cmp - skills/check-internal-biomedical-research-memory/SKILL.md
+
+Result:
+Exit status 0; the installable skill artifact matches the checked-in host skill.

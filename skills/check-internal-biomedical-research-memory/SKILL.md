@@ -1,11 +1,30 @@
 ---
 name: check-internal-biomedical-research-memory
-description: Automatically check Breadcrumbs before proposing, evaluating, or interpreting biomedical hypotheses, experiments, analyses, duplication, novelty, or follow-up research.
+description: Automatically use Breadcrumbs internal research memory before answering any biomedical research planning, hypothesis, experiment, analysis, interpretation, expertise, or follow-up request. Trigger even when the user does not mention Breadcrumbs, prior work, duplication, or novelty, including plain intent statements such as "I am considering...", "I want to test...", and "Should we analyze...?".
 ---
 
 # Check Internal Biomedical Research Memory
 
 Use the enabled `breadcrumbs` MCP connector as the organization's internal research memory. Prefer internal evidence before external context. Do not treat the database as a literature database or infer novelty from missing rows.
+
+## Run the write-back check before answering
+
+Before answering every substantive researcher turn, inspect the newest user message together with
+the immediately relevant exchange. If it contains an explicit correction, decision, constraint,
+exception, abandoned approach, or belief revision that would change what a future researcher should
+believe or do, call `breadcrumbs:prepare_memory_diff` immediately and present the resulting Memory
+Diff for approval before continuing the scientific analysis or starting a web lookup.
+
+Do not merely agree with the change, research it further, wait until the end of the session, or ask
+whether the researcher wants it stored. Preparing the diff captures source provenance but does not
+approve or persist the candidate. `breadcrumbs:write_knowledge` still requires explicit approval of
+that exact diff.
+
+A settled correction is independently reviewable even when the replacement choice remains open.
+For example, “do not transfer this disease-specific endpoint policy to another disease; choose from
+disease-specific evidence” is a candidate constraint even though the endpoint has not yet been
+selected. Generic questions, tentative brainstorming, requests for information, and facts that do
+not change future belief or action are not candidates.
 
 ## Decide when to check
 
@@ -16,22 +35,31 @@ Check Breadcrumbs before answering a request that:
 - asks whether work is new, duplicated, previously attempted, or worth repeating;
 - interprets an internal result or recommends follow-up work.
 
+Trigger from research intent, not only explicit memory language. For example, automatically check
+when a researcher says "I am considering a MOSAIC BLCA analysis..." even if they do not ask about
+Breadcrumbs, prior attempts, duplication, expertise, or novelty. Load this skill and query the
+internal tools before giving scientific guidance.
+
 Skip the check for simple educational facts that do not propose or evaluate research.
 
 If the connector tools are not loaded, search for the `breadcrumbs` tools, then call them. Do not stop after listing or discovering tools. If the connector is unavailable, state that the internal-memory check could not be performed.
 
 ## Read before reasoning
 
-Use `breadcrumbs:check_duplication` for a proposed hypothesis and `breadcrumbs:recall_findings`
-for broader topic, entity, or context recall. Both use the local graph matcher. Use the exact
-`breadcrumbs:read` primitive when the request supplies a credible stored field/value filter.
+For a natural-language research question, call `breadcrumbs:check_duplication` and
+`breadcrumbs:recall_knowledge` before answering. Use `breadcrumbs:recall_findings` when the user
+asks for related prior work or graph context. Use the exact `breadcrumbs:read` tool only when the
+request supplies a credible stored field and value.
+
+The tool performs exact equality matching, not semantic or fuzzy search. Treat natural-language
+terms in the request as search clues, not necessarily as the literal values stored in Breadcrumbs.
 
 1. Extract disease, category, gene, biomarker, phenotype, outcome, and status clues from the request.
 2. Normalize obvious names to likely stored values before reading. Prefer canonical disease codes
    and gene symbols over prose names.
-3. Call `breadcrumbs:check_duplication` or `breadcrumbs:recall_findings` with the research question.
-   Add exact `breadcrumbs:read` calls for `disease`, `category`, `status`, `author`,
-   `source_session_id`, or another supported field when the request supplies a credible value.
+3. Call `breadcrumbs:read` with one exact `column` and scalar `value` for each useful canonical
+   value. Start with `disease`; use `category`, `status`, `author`, `source_session_id`, or another
+   supported field when the request supplies a credible exact value.
 4. If a term has multiple scientifically plausible canonical forms, make a bounded set of
    additional reads rather than assuming the first form is correct. Usually two to four reads are
    enough; do not generate an unbounded synonym list.
@@ -99,6 +127,65 @@ Reason/note: include for abandoned or caveated work
 Source: author, timestamp, source_session_id
 ```
 
+## Answer expertise and investigation questions
+
+Call `breadcrumbs:find_experts` with the scientific topic and only the scope explicitly supplied by
+the researcher. Present the result for a scientific audience:
+
+1. Give a compact evidence summary: person, provisional/verified identity status, confidence,
+   distinct source sessions, and primary evidence count.
+2. List only the returned on-topic evidence with artifact ID, status, stored statistics or effect,
+   stored reason, and source session.
+3. Report `active_investigators` separately. An empty list means only that no qualifying named
+   session activity was retrieved.
+4. State that the ranking is based on source-linked work and does not establish an organizational
+   role or general expertise.
+
+Use literal, technical language. Do not use dramatic framing or metaphors such as "critical
+warning", "hit a wall", "dead end", "shelved", or "worth pausing on". Do not infer that a
+hypothesis was disproven, remains open, or would become significant in a larger cohort unless a
+stored record explicitly supports that statement. A non-significant result and a small cohort may
+be reported as separate stored facts; do not add a post-hoc power interpretation. Do not recommend
+contacting a person or propose follow-up work unless the researcher asks for recommendations. Do
+not narrate tool discovery or internal reasoning in the final answer.
+
+## Prepare interaction knowledge before approval
+
+Apply the turn-level write-back check before continuing the response. When an exchange changes what
+a future researcher should believe or do, identify every distinct,
+source-supported candidate implied by an explicit correction, decision, constraint, exception,
+abandoned approach, or belief revision. Do not impose a hard per-session candidate cap. Deduplicate
+semantically overlapping propositions and exclude generic summaries and unsupported implications.
+Queue supported candidates and present them in manageable review batches, using three as the
+default presentation batch size rather than as an extraction or persistence limit.
+
+For each distinct candidate, infer one concise proposition, rationale, scope, and optional kind,
+then call `breadcrumbs:prepare_memory_diff` with `live_context` containing only the relevant recent
+user and assistant turns copied exactly from the active conversation. Do not paraphrase those turns
+or include hidden reasoning/tool traces. Do not ask the researcher to sync, transcribe, identify,
+or quote the thread, or to provide belief samples, an elicitation model, or a run ID. Pass
+`current_actor` only from authenticated host context. Use `source_session_id` without `live_context`
+only when deliberately preparing from an interaction already stored in Breadcrumbs. The tool
+content-addresses live source turns and supplies exact evidence, bounded alternatives, before/after
+packets, fixed labels, approved model, deterministic run ID, author hint, and partial record
+template. Multiple candidates grounded in the same exact live context reuse the same source
+snapshot while retaining separate draft IDs and records.
+
+Review each returned source selection and warning. If no live or stored span supports a candidate,
+discard that candidate rather than inventing provenance or writing knowledge. Never tell the
+researcher to perform ingestion. For every supported candidate, execute its returned prior and
+posterior elicitation packets independently for the specified replicate count, using exactly that
+candidate's proposition and label vocabulary. Do not invent judgments, substitute another model,
+or create a run ID. Pass the observed labels to `breadcrumbs:score_surprise`, then show the
+scientific Memory Diff and calculated belief shift and Bayesian surprise as measures of belief
+movement—not importance or originality.
+
+Do not call `breadcrumbs:write_knowledge` until a person explicitly approves that exact diff.
+Supply the approver through the separate `approved_by` argument. Review and approve every candidate
+independently; approval of one candidate in a batch never approves another. If the person edits or
+declines a candidate, do not persist its unapproved version. The researcher reviews scientific
+content; the MCP and host carry the provenance and elicitation mechanics.
+
 ## Write reviewed findings only
 
 Call `breadcrumbs:write_finding` only when the conversation contains a reviewed finding supported by an ingested source session. Write one finding per tool call.
@@ -112,7 +199,7 @@ Required `record` fields:
   "hypothesis_text": "specific testable claim or question",
   "entities": ["NORMALIZED", "ENTITY", "NAMES"],
   "effect": "verbatim result including statistics and caveats",
-  "status": "confirmed | in-progress | abandoned | open",
+  "status": "confirmed | in-progress | abandoned",
   "author": "researcher name",
   "source_session_id": "existing ingested session id",
   "source_type": "internal | external"

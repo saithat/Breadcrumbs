@@ -62,6 +62,30 @@
       ],
       "linked_requirements": ["REQ-005", "REQ-006"],
       "evidence_required": ["screenshot"]
+    },
+    {
+      "id": "SCN-004",
+      "title": "The researcher reviews a Memory Diff before it enters the trail",
+      "kind": "happy_path",
+      "mode": "public",
+      "description": "The demo exposes the judgment boundary instead of silently turning chat into memory: the exact source, belief movement, Bayesian surprise, and changed action appear in one review card.",
+      "preconditions": [
+        "The backend is running and the source K Pro session is ingested",
+        "Any writable candidate carries a logged elicitation run from an approved model"
+      ],
+      "steps": [
+        "Open the Memory Diff review",
+        "Inspect the source quote and calculated metrics",
+        "Approve or skip the candidate"
+      ],
+      "expected": [
+        "Approval persists the reviewed item through the human-gated backend",
+        "Skip leaves the authoritative graph unchanged",
+        "The checked-in illustrative fixture is visibly non-writable",
+        "A missing backend is shown as an error, never as a successful save"
+      ],
+      "linked_requirements": ["REQ-008"],
+      "evidence_required": ["screenshot", "command-log"]
     }
   ],
   "holdout_suites": []

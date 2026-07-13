@@ -1,0 +1,32 @@
+Breadcrumbs prepare_memory_diff verification
+Run: memory-context-001
+Date: 2026-07-12T19:26:34Z
+
+$ PYTHONPATH=src .venv/bin/python -m unittest tests.test_memory_diff_preparation
+....
+----------------------------------------------------------------------
+Ran 4 tests
+
+OK
+
+$ PYTHONPATH=src .venv/bin/python -m pytest
+collected 120 items
+120 passed, 1 warning in 8.71s
+
+$ PYTHONPATH=src .venv/bin/python scripts/setupref_validate.py
+OK — spec tree valid (0 warning(s))
+
+$ cd ui && npm run build
+Compiled successfully; TypeScript and static page generation completed.
+
+Real-ingested-transcript smoke test (against a temporary copy of breadcrumbs.db):
+- repeated preparation was byte-for-byte deterministic
+- selected source message: 5310ed16-bb1d-468c-958a-6a3935a1ec53:1
+- selected exact evidence: - **Moran's I = 0.076, p = 0.26 (non-significant)** — CXCL13 expression is high but randomly distributed
+- source message hash length: 64 hexadecimal characters
+- prior packet excluded the evidence; posterior packet included it
+
+Artifact SHA256:
+- schema/mcp_contracts.schema.json: cd6cba9c6eb8a00974ad75781a38ae81a82f82036cc7cf2bb3fc0f5876a7ac06
+- tests/test_memory_diff_preparation.py: 53597769d7a94f012353ed1a43e0406ec7cf4d4d70f982848416d2185e6f21cc
+- src/breadcrumbs/interaction_context.py: ea4314ae5f0e95caabd4f26c8b476ef764c2fa9ad2f5d079ecda93e4a1d2ad1f

@@ -105,3 +105,17 @@ Component IDs must stay in the same order as `components.md` and `feature.json`.
 - **Source:** not-built.
 - **Status:** not-built.
 - **REQ-007:** A sub-five-minute mp4/mov of the complete flow exists before demo day.
+
+### BC-DEMO-008 — Memory Diff
+- **Behavior:** A compact review card makes the candidate-generation boundary visible: the proposed
+  knowledge kind and proposition, exact supporting quote, belief before/after, Bayesian surprise in
+  bits, and structured action change are shown before the researcher can approve or skip it. Save
+  calls the same backend human gate as MCP; when the backend is absent the UI does not pretend the
+  item was persisted. The checked-in example is visibly illustrative and cannot be approved,
+  because its fixed samples are UI test data rather than a logged model elicitation; a live
+  candidate becomes writable only with an approved model and elicitation run ID.
+- **Data:** one ephemeral candidate in the client; approved rows are written to `knowledge_items`.
+- **Source:** `ui/app/memory-diff.tsx`; `ui/app/api/knowledge/route.ts`; `ui/app/page.tsx`.
+- **Status:** built-at-parity.
+- **REQ-008:** The production UI build includes a Memory Diff review with explicit approve/skip
+  actions and no mock-success write path.

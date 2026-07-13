@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "breadcrumbs-mcp"
-version = "0.3.0"
+version = "0.6.0"
 description = "Breadcrumbs MCP wrapper for the internal research-memory database"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,7 +14,11 @@ dependencies = [
   "uvicorn>=0.34,<1",
   "playwright>=1.45,<2",
   "python-dotenv>=1.0,<2",
+  "fastembed>=0.8,<1",
 ]
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9"]
 
 [project.scripts]
 breadcrumbs-mcp = "breadcrumbs.server:main"

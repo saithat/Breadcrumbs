@@ -4,15 +4,15 @@
     {
       "id": "REQ-001",
       "kind": "command",
-      "detail": "Server starts and registers all five tools",
+      "detail": "Server starts and registers all ten tools",
       "command": "python -m pytest tests/test_mcp_server.py -k registration",
       "cwd": ".",
-      "startedAt": "2026-07-12T17:56:22Z",
-      "finishedAt": "2026-07-12T17:56:23Z",
-      "logPath": ".spec/evidence/research-memory-tools/mcp-contract-001/mcp-contract.log",
+      "startedAt": "2026-07-12T19:47:27Z",
+      "finishedAt": "2026-07-12T19:48:31Z",
+      "logPath": ".spec/evidence/research-memory-tools/live-context-002/live-context.log",
       "artifactHash": "",
       "satisfied": true,
-      "summary": "Five-tool registration and the UI HTTP seam passed."
+      "summary": "The ten-tool server registration passed as part of the 124-test suite; prepare_memory_diff is registered as idempotent, non-destructive source capture."
     },
     {
       "id": "REQ-002",
@@ -139,6 +139,71 @@
       "reviewPath": ".spec/evidence/research-memory-tools/pending/match-credibility.md",
       "satisfied": false,
       "summary": ""
+    },
+    {
+      "id": "REQ-012",
+      "kind": "command",
+      "detail": "Surprise metrics are deterministic for fixed belief and action samples",
+      "command": "python -m pytest tests/test_surprise.py",
+      "cwd": ".",
+      "startedAt": "2026-07-12T07:53:00Z",
+      "finishedAt": "2026-07-12T07:54:06Z",
+      "logPath": ".spec/evidence/research-memory-tools/knowledge-memory-001/surprise.log",
+      "artifactHash": "",
+      "satisfied": true,
+      "summary": "24 tests passed for Beta fit, KL and entropy in bits, belief shift, equal sample counts, label normalization, and action divergence."
+    },
+    {
+      "id": "REQ-013",
+      "kind": "command",
+      "detail": "Knowledge writes enforce a separate approval actor, logged approved-model elicitation, source evidence, retry identity, linear patches, and abandoned reasons",
+      "command": "python -m pytest tests/test_knowledge_memory.py -k gate",
+      "cwd": ".",
+      "startedAt": "2026-07-12T07:53:00Z",
+      "finishedAt": "2026-07-12T07:54:06Z",
+      "logPath": ".spec/evidence/research-memory-tools/knowledge-memory-001/knowledge-gate.log",
+      "artifactHash": "",
+      "satisfied": true,
+      "summary": "10 gate tests passed for separate approval, elicitation provenance, source evidence, balanced sampling, retry conflicts, linear patches, and server-only metrics."
+    },
+    {
+      "id": "REQ-014",
+      "kind": "command",
+      "detail": "Knowledge recall fuses local BM25 and model-versioned dense rankings, then applies field coverage, typed condition applicability, aliases, strict-scope opt-in, and patch history",
+      "command": "python -m pytest tests/test_knowledge_memory.py -k recall",
+      "cwd": ".",
+      "startedAt": "2026-07-12T15:22:06Z",
+      "finishedAt": "2026-07-12T15:24:25Z",
+      "logPath": ".spec/evidence/research-memory-tools/knowledge-retrieval-003/knowledge-recall.log",
+      "artifactHash": "",
+      "satisfied": true,
+      "summary": "4 recall tests passed. With zero BM25/token overlap, pinned local model BAAI/bge-small-en-v1.5 retrieved the synthetic buffer_pH < 7.0 decision at cosine 0.616973. Fresh ephemeral Codex thread 019f56ed-8b03-7210-9a1d-a937de0b3c01 called the MCP tool and recommended Protocol B; aliases, applicability, strict scope, and patch history remain deterministic."
+    },
+    {
+      "id": "REQ-015",
+      "kind": "command",
+      "detail": "Expert lookup returns concise source-linked evidence, separates investigation activity, and excludes off-disease, low-coverage, and non-person matches",
+      "command": "python -m pytest tests/test_expertise.py",
+      "cwd": ".",
+      "startedAt": "2026-07-12T17:14:00Z",
+      "finishedAt": "2026-07-12T17:16:34Z",
+      "logPath": ".spec/evidence/research-memory-tools/scientific-expertise-003/expertise.log",
+      "artifactHash": "93777bd4a6408a2e3756ec389bf9e9ba26f5041ad11bde6a87b4a2b043524b84",
+      "satisfied": true,
+      "summary": "6 deterministic tests passed. Fresh ephemeral Codex thread 019f5754-1efb-7893-a059-694bc943813b returned only Roopal for scoped BLCA evidence, reported stored statistics and provenance in a compact table, and omitted off-disease, non-person, dramatic, and speculative language."
+    },
+    {
+      "id": "REQ-016",
+      "kind": "command",
+      "detail": "prepare_memory_diff supports independently reviewable distinct candidates without a hard cap, reuses exact live source snapshots, derives deterministic evidence and prior/posterior context, and creates no knowledge row before approval",
+      "command": "PYTHONPATH=src .venv/bin/python -m unittest discover -s tests",
+      "cwd": ".",
+      "startedAt": "2026-07-12T21:35:09Z",
+      "finishedAt": "2026-07-12T21:35:12Z",
+      "logPath": ".spec/evidence/research-memory-tools/turn-writeback-trigger-001/turn-writeback-trigger.log",
+      "artifactHash": "da7812c343015934fb49c976d5476d9edce082b817a4f1fb6f89e55a67d9a9b9",
+      "satisfied": true,
+      "summary": "The full 125-test suite and setupref validation passed. The MCP and host skill now run a turn-level write-back check before analysis or web lookup, treat settled corrections as independently reviewable even when the replacement choice is open, and retain independently approved bounded review batches without a hard candidate cap."
     }
   ],
   "complete": false
