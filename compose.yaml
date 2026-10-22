@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:18.4-alpine
+    environment:
+      POSTGRES_DB: breadcrumbs
+      POSTGRES_USER: breadcrumbs
+      POSTGRES_PASSWORD: breadcrumbs
+    ports:
+      - "127.0.0.1:${BREADCRUMBS_POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U breadcrumbs -d breadcrumbs"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+volumes:
+  postgres_data:

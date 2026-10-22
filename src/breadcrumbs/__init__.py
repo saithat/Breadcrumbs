@@ -1,3 +1,3 @@
-"""Breadcrumbs: internal research memory exposed through MCP."""
+"""Breadcrumbs: organizational knowledge memory exposed through MCP."""
 
-__version__ = "0.6.0"
+__version__ = "0.8.0"

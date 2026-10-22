@@ -1,4 +1,0 @@
-interface:
-  display_name: "Check Internal Biomedical Research Memory"
-  short_description: "Check Breadcrumbs before biomedical research"
-  default_prompt: "Use $check-internal-biomedical-research-memory to check Breadcrumbs before answering this biomedical research question."

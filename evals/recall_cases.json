@@ -1,0 +1,555 @@
+{
+  "note": "Synthetic organization and queries for retrieval evaluation only. Query categories: keyword (exact names), agentic (long, precise, sometimes quoted), paraphrase (little word overlap). Items without cases are distractors that share vocabulary with the targets.",
+  "items": {
+    "canary-exploratory": {
+      "kind": "constraint",
+      "proposition": "Treat single-region canary results as exploratory until at least four independent environments are validated.",
+      "rationale": "Many instances in one region are not independent evidence that a rollout is safe everywhere.",
+      "scope": {
+        "system": "payments",
+        "environment": "production"
+      }
+    },
+    "staged-rollout": {
+      "kind": "constraint",
+      "proposition": "Changes that alter customer data ship through staged rollouts of 1%, 10%, 50%, then 100%.",
+      "rationale": "Data corruption is expensive to reverse, so exposure grows only after each stage looks healthy.",
+      "scope": {
+        "process": "deployment"
+      }
+    },
+    "rollout-freeze": {
+      "kind": "decision",
+      "proposition": "No production rollouts between December 20 and January 3 except security fixes.",
+      "rationale": "Staffing is thin over the period and recovery from a bad rollout takes longer.",
+      "scope": {
+        "process": "deployment"
+      }
+    },
+    "feature-flags": {
+      "kind": "decision",
+      "proposition": "Remove feature flags within 30 days of a feature reaching a 100% rollout.",
+      "rationale": "Stale flags multiply code paths and have caused two production incidents.",
+      "scope": {
+        "process": "engineering"
+      }
+    },
+    "postgres-only": {
+      "kind": "decision",
+      "proposition": "PostgreSQL is the only supported database for services; embedded SQLite fallbacks were removed.",
+      "rationale": "Supporting two databases doubled migration work and hid production-only bugs.",
+      "scope": {
+        "process": "engineering"
+      }
+    },
+    "abandoned-mongodb": {
+      "kind": "abandoned",
+      "proposition": "Migrating the ledger service to MongoDB.",
+      "rationale": "The migration was evaluated for flexible schemas during the 2025 ledger rewrite.",
+      "reason": "Multi-document transactions were too slow for reconciliation batches.",
+      "scope": {
+        "system": "ledger"
+      }
+    },
+    "db-migration-owner": {
+      "kind": "constraint",
+      "proposition": "Schema migrations on the ledger database need a named database owner on call during the deploy window.",
+      "rationale": "A failed migration once left the ledger locked for an hour with nobody able to roll back.",
+      "scope": {
+        "system": "ledger"
+      }
+    },
+    "read-replica": {
+      "kind": "exception",
+      "proposition": "Reporting queries may read from replicas despite up to five minutes of replication lag.",
+      "rationale": "Reports are reviewed daily, so slightly stale numbers are acceptable and protect the primary.",
+      "scope": {
+        "system": "reporting"
+      }
+    },
+    "embeddings-model": {
+      "kind": "decision",
+      "proposition": "Use bge-small-en-v1.5 for local embeddings; hosted embedding APIs are not allowed for customer text.",
+      "rationale": "Customer text must not leave our infrastructure, and the small model runs on CPU.",
+      "scope": {
+        "system": "search"
+      }
+    },
+    "pii-logging": {
+      "kind": "constraint",
+      "proposition": "Never log raw email addresses or phone numbers; hash them with the per-tenant salt.",
+      "rationale": "Logs are retained longer and accessed more widely than the primary customer store.",
+      "scope": {
+        "process": "engineering"
+      }
+    },
+    "retention": {
+      "kind": "decision",
+      "proposition": "Delete raw support transcripts after 90 days and keep only approved summaries.",
+      "rationale": "Transcripts contain personal data that is rarely needed after a ticket closes.",
+      "scope": {
+        "system": "support"
+      }
+    },
+    "eu-residency": {
+      "kind": "constraint",
+      "proposition": "Data for EU customers must stay in the Frankfurt region, including backups.",
+      "rationale": "Contracts with EU customers require in-region storage for every copy of their data.",
+      "scope": {
+        "region": "eu"
+      }
+    },
+    "abandoned-graphql": {
+      "kind": "abandoned",
+      "proposition": "Offering a public GraphQL API to partners.",
+      "rationale": "Partners asked for flexible queries across accounts and invoices.",
+      "reason": "Query cost was unbounded and complexity-based rate limits confused partners.",
+      "scope": {
+        "system": "public-api"
+      }
+    },
+    "api-versioning": {
+      "kind": "decision",
+      "proposition": "Version the public REST API in the URL path, such as /v2/, and support each version for 18 months.",
+      "rationale": "Path versions are visible in logs and easy for partners to pin.",
+      "scope": {
+        "system": "public-api"
+      }
+    },
+    "oncall-handoff": {
+      "kind": "decision",
+      "proposition": "On-call handoff happens Mondays at 10:00 Oslo time with a written incident summary.",
+      "rationale": "Verbal handoffs lost context about open incidents twice last quarter.",
+      "scope": {
+        "process": "operations"
+      }
+    },
+    "incident-sev1": {
+      "kind": "constraint",
+      "proposition": "A Sev1 incident requires a status page update within 15 minutes of declaration.",
+      "rationale": "Customers learned about the March outage from social media before we posted anything.",
+      "scope": {
+        "process": "operations"
+      }
+    },
+    "hiring-takehome": {
+      "kind": "abandoned",
+      "proposition": "Take-home coding assignments for backend candidates.",
+      "rationale": "Take-home work was meant to reduce interviewer load.",
+      "reason": "Completion fell below 40% and the format favored candidates with free time.",
+      "scope": {
+        "process": "hiring"
+      }
+    },
+    "pricing-annual": {
+      "kind": "decision",
+      "proposition": "Annual plans get a 15% discount; monthly plans get none.",
+      "rationale": "Annual commitments reduce churn and smooth cash flow.",
+      "scope": {
+        "process": "pricing"
+      }
+    },
+    "churn-belief": {
+      "kind": "belief_revision",
+      "proposition": "An onboarding call in the first week, not price, is the strongest predictor of 90-day retention.",
+      "rationale": "The cohort analysis showed price changes had little effect while onboarding calls doubled retention.",
+      "scope": {
+        "process": "customer-success"
+      }
+    },
+    "ml-eval-holdout": {
+      "kind": "constraint",
+      "proposition": "Model evaluations must use the frozen 2026-Q1 holdout set, and nobody tunes against it.",
+      "rationale": "Tuning on the holdout inflated reported accuracy by six points last year.",
+      "scope": {
+        "process": "machine-learning"
+      }
+    },
+    "gpu-spot": {
+      "kind": "exception",
+      "proposition": "Training jobs may use spot GPUs only if they checkpoint at least every 30 minutes.",
+      "rationale": "Spot capacity is half the price but can be reclaimed at any time.",
+      "scope": {
+        "process": "machine-learning"
+      }
+    },
+    "vendor-security": {
+      "kind": "constraint",
+      "proposition": "New vendors that process customer data need a security review before contract signature.",
+      "rationale": "Reviews after signing left us without leverage to require fixes.",
+      "scope": {
+        "process": "procurement"
+      }
+    },
+    "bm25-agent": {
+      "kind": "decision",
+      "proposition": "Agent-facing search uses BM25 first, adding embeddings only when an eval shows a gain.",
+      "rationale": "Agents write precise queries, and lexical ranking is cheaper and easier to explain.",
+      "scope": {
+        "system": "search"
+      }
+    },
+    "mobile-min-version": {
+      "kind": "decision",
+      "proposition": "Mobile apps force-upgrade clients older than two minor versions.",
+      "rationale": "Supporting old clients kept deprecated API endpoints alive for years.",
+      "scope": {
+        "system": "mobile"
+      }
+    },
+    "rollout-dashboards": {
+      "kind": "decision",
+      "proposition": "Every production rollout links its monitoring dashboard in the deploy ticket.",
+      "rationale": "Reviewers could not find the right graphs during a bad rollout.",
+      "scope": {
+        "process": "deployment"
+      }
+    },
+    "canary-metrics": {
+      "kind": "decision",
+      "proposition": "Canary analysis compares error rate and p99 latency against the baseline fleet.",
+      "rationale": "Error rate alone missed a latency regression in one region.",
+      "scope": {
+        "process": "deployment"
+      }
+    },
+    "ledger-backups": {
+      "kind": "constraint",
+      "proposition": "Ledger database backups are restored into staging every week to prove they work.",
+      "rationale": "An untested backup failed to restore during the 2024 incident.",
+      "scope": {
+        "system": "ledger"
+      }
+    },
+    "customer-data-exports": {
+      "kind": "decision",
+      "proposition": "Customer data exports are generated asynchronously and expire after seven days.",
+      "rationale": "Large synchronous exports timed out and links were shared indefinitely.",
+      "scope": {
+        "system": "platform"
+      }
+    },
+    "api-rate-limits": {
+      "kind": "decision",
+      "proposition": "Public REST API rate limits are 600 requests per minute per partner key.",
+      "rationale": "One partner's batch job degraded the API for everyone else.",
+      "scope": {
+        "system": "public-api"
+      }
+    },
+    "incident-postmortem": {
+      "kind": "constraint",
+      "proposition": "Every Sev1 and Sev2 incident gets a blameless postmortem within five business days.",
+      "rationale": "Follow-up actions were forgotten when postmortems slipped.",
+      "scope": {
+        "process": "operations"
+      }
+    },
+    "support-escalation": {
+      "kind": "decision",
+      "proposition": "Support escalates customer tickets to engineering only through the triage rotation.",
+      "rationale": "Direct pings interrupted engineers and bypassed prioritization.",
+      "scope": {
+        "system": "support"
+      }
+    },
+    "search-reindex": {
+      "kind": "decision",
+      "proposition": "Search indexes are rebuilt nightly from the primary database.",
+      "rationale": "Incremental updates drifted from the source of truth.",
+      "scope": {
+        "system": "search"
+      }
+    },
+    "vendor-renewals": {
+      "kind": "decision",
+      "proposition": "Vendor contracts renew annually and finance reviews them in October.",
+      "rationale": "Auto-renewals locked us into unused tools.",
+      "scope": {
+        "process": "procurement"
+      }
+    },
+    "mobile-release-train": {
+      "kind": "decision",
+      "proposition": "Mobile apps ship on a two-week release train.",
+      "rationale": "Ad hoc releases made app store review delays unpredictable.",
+      "scope": {
+        "system": "mobile"
+      }
+    },
+    "ml-feature-store": {
+      "kind": "decision",
+      "proposition": "Model features are read from the feature store and never recomputed in notebooks.",
+      "rationale": "Notebook features silently diverged from production features.",
+      "scope": {
+        "process": "machine-learning"
+      }
+    },
+    "gpu-quotas": {
+      "kind": "constraint",
+      "proposition": "Each team's quota is capped at eight on-demand GPUs.",
+      "rationale": "One training run consumed the whole cluster for a week.",
+      "scope": {
+        "process": "machine-learning"
+      }
+    },
+    "data-deletion": {
+      "kind": "constraint",
+      "proposition": "Customer data deletion requests complete within 30 days across all systems, including backups.",
+      "rationale": "Regulators require deletion everywhere a copy of the data exists.",
+      "scope": {
+        "process": "privacy"
+      }
+    },
+    "oncall-pager": {
+      "kind": "decision",
+      "proposition": "On-call engineers acknowledge pages within five minutes during their shift.",
+      "rationale": "Slow acknowledgements stretched a Sev1 outage by forty minutes.",
+      "scope": {
+        "process": "operations"
+      }
+    },
+    "schema-review": {
+      "kind": "constraint",
+      "proposition": "Database schema changes need review from the data platform team before merge.",
+      "rationale": "Unreviewed indexes caused write amplification on the primary.",
+      "scope": {
+        "process": "engineering"
+      }
+    },
+    "pricing-enterprise": {
+      "kind": "decision",
+      "proposition": "Enterprise plans are priced per seat with a minimum of 50 seats.",
+      "rationale": "Small enterprise deals cost more to support than they earned.",
+      "scope": {
+        "process": "pricing"
+      }
+    }
+  },
+  "cases": [
+    {
+      "category": "keyword",
+      "expected": "embeddings-model",
+      "queries": [
+        "bge-small-en-v1.5"
+      ]
+    },
+    {
+      "category": "keyword",
+      "expected": "eu-residency",
+      "queries": [
+        "Frankfurt region backups"
+      ]
+    },
+    {
+      "category": "keyword",
+      "expected": "incident-sev1",
+      "queries": [
+        "Sev1 status page"
+      ]
+    },
+    {
+      "category": "keyword",
+      "expected": "ml-eval-holdout",
+      "queries": [
+        "2026-Q1 holdout set"
+      ]
+    },
+    {
+      "category": "keyword",
+      "expected": "abandoned-mongodb",
+      "queries": [
+        "MongoDB ledger migration"
+      ]
+    },
+    {
+      "category": "keyword",
+      "expected": "abandoned-graphql",
+      "queries": [
+        "GraphQL"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "db-migration-owner",
+      "queries": [
+        "who must be on call when deploying schema migrations to the \"ledger\" database",
+        "database owner deploy window"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "staged-rollout",
+      "queries": [
+        "rules for rolling out a change that modifies customer data in percentage stages \"staged rollouts\"",
+        "1% 10% 50% rollout stages"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "canary-exploratory",
+      "queries": [
+        "can a single region canary with many instances justify a broad rollout to all environments",
+        "canary independent environments validation"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "retention",
+      "queries": [
+        "how long are raw support transcripts retained before deletion and what is kept",
+        "transcript retention 90 days"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "embeddings-model",
+      "queries": [
+        "is it allowed to send customer text to a hosted embedding API or must embeddings run locally",
+        "local embedding model customer text"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "vendor-security",
+      "queries": [
+        "requirements for onboarding a new vendor that will process customer data, security review before signing the contract"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "api-versioning",
+      "queries": [
+        "how should the public REST API be versioned and how long is each version supported"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "feature-flags",
+      "queries": [
+        "when do we remove feature flags after a feature reaches \"100%\" rollout"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "gpu-spot",
+      "queries": [
+        "can training jobs run on spot GPUs and what checkpoint frequency is required"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "read-replica",
+      "queries": [
+        "is it acceptable for reporting dashboards to query read replicas given replication lag"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "oncall-handoff",
+      "queries": [
+        "what day and time is the on-call handoff and what must be written down",
+        "on-call rotation handoff"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "bm25-agent",
+      "queries": [
+        "should agent-facing search use BM25 or embeddings, and when do we add vector search"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "pricing-annual",
+      "queries": [
+        "discount for annual subscription plans versus monthly billing"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "mobile-min-version",
+      "queries": [
+        "minimum supported mobile app version before forcing clients to upgrade"
+      ]
+    },
+    {
+      "category": "agentic",
+      "expected": "ml-eval-holdout",
+      "queries": [
+        "can I tune hyperparameters against the frozen evaluation holdout"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "rollout-freeze",
+      "queries": [
+        "can we push code to prod over the christmas holidays",
+        "deploys in late December and early January"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "churn-belief",
+      "queries": [
+        "what best predicts whether a new customer stays",
+        "customer retention predictor onboarding"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "abandoned-mongodb",
+      "queries": [
+        "did we try a NoSQL document store for financial records",
+        "document database for the ledger"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "hiring-takehome",
+      "queries": [
+        "why did we stop giving engineering applicants homework",
+        "take-home assignment hiring"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "pii-logging",
+      "queries": [
+        "are we allowed to write customer emails into application logs"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "eu-residency",
+      "queries": [
+        "where must European user data physically live",
+        "EU data residency"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "incident-sev1",
+      "queries": [
+        "what's the deadline for telling customers about a major outage",
+        "outage communication status page"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "abandoned-graphql",
+      "queries": [
+        "why isn't there a flexible query language for partners on our public interface",
+        "GraphQL API abandoned"
+      ]
+    },
+    {
+      "category": "paraphrase",
+      "expected": "postgres-only",
+      "queries": [
+        "which datastore do we standardize on",
+        "supported database"
+      ]
+    }
+  ]
+}

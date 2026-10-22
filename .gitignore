@@ -17,23 +17,14 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# ...except spec evidence. Evidence is pointer-based: these logs ARE the proof that a
-# requirement is met, so they must be committed despite the *.log rule above.
-!.spec/evidence/**/*.log
-
-# Local backups taken before a schema migration
-ingestion/*.db.bak
-
 # Dependencies
 node_modules/
 
-# Breadcrumbs: never commit the live authenticated session (a real login credential)
+# Breadcrumbs source data
+ingestion/transcripts/
 ingestion/.secrets/
-ingestion/*.db-shm
-ingestion/*.db-wal
-
-# Breadcrumbs ingestion output (breadcrumbs.db, transcripts/) IS tracked intentionally so the
-# team can collaborate on the shared graph store without each re-scraping K Pro.
+conversation-exports/
+*.conversation.json
 
 # Python
 __pycache__/
@@ -45,9 +36,7 @@ build/
 *.egg-info/
 .breadcrumbs/
 
-# GitKB: store/ is the canonical, shareable KB data - tracked intentionally so the
-# team gets it via `git pull` without each running `git-kb init`. Only the derived,
-# regeneratable local index cache and per-user checkout workspace are ignored.
+# GitKB local caches and workspaces
 .kb/.cache/
 .kb/workspace/
 .kb/workspaces/

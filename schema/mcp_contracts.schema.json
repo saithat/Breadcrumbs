@@ -1,33 +1,38 @@
 {
   "$defs": {
-    "CheckDuplicationInput": {
+    "Condition": {
       "additionalProperties": false,
       "properties": {
-        "hypothesis_text": {
+        "field": {
           "minLength": 1,
-          "title": "Hypothesis Text",
+          "title": "Field",
           "type": "string"
         },
-        "limit": {
-          "default": 5,
-          "maximum": 20,
-          "minimum": 1,
-          "title": "Limit",
-          "type": "integer"
-        }
-      },
-      "required": [
-        "hypothesis_text"
-      ],
-      "title": "CheckDuplicationInput",
-      "type": "object"
-    },
-    "DuplicationResult": {
-      "additionalProperties": false,
-      "properties": {
-        "markdown": {
+        "field_aliases": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Field Aliases",
+          "type": "array"
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "ne",
+            "lt",
+            "lte",
+            "gt",
+            "gte",
+            "in"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "unit": {
           "anyOf": [
             {
+              "minLength": 1,
               "type": "string"
             },
             {
@@ -35,39 +40,104 @@
             }
           ],
           "default": null,
-          "title": "Markdown"
+          "title": "Unit"
         },
-        "matches": {
-          "items": {
-            "$ref": "#/$defs/Match"
-          },
-          "title": "Matches",
-          "type": "array"
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "field",
+        "operator",
+        "value"
+      ],
+      "title": "Condition",
+      "type": "object"
+    },
+    "ConversationEvidence": {
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
         },
-        "searched": {
-          "minimum": 0,
-          "title": "Searched",
-          "type": "integer"
+        "evidence_type": {
+          "const": "conversation_activity",
+          "default": "conversation_activity",
+          "title": "Evidence Type",
+          "type": "string"
         },
-        "verdict": {
-          "enum": [
-            "match",
-            "open"
-          ],
-          "title": "Verdict",
+        "relationship": {
+          "const": "session_actor",
+          "default": "session_actor",
+          "title": "Relationship",
+          "type": "string"
+        },
+        "relevance": {
+          "title": "Relevance",
+          "type": "number"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "topic": {
+          "title": "Topic",
+          "type": "string"
+        },
+        "topic_message_id": {
+          "title": "Topic Message Id",
           "type": "string"
         }
       },
       "required": [
-        "verdict",
-        "matches",
-        "searched"
+        "session_id",
+        "topic_message_id",
+        "topic",
+        "relevance",
+        "created_at"
       ],
-      "title": "DuplicationResult",
+      "title": "ConversationEvidence",
+      "type": "object"
+    },
+    "Elicitation": {
+      "properties": {
+        "model": {
+          "const": "claude-sonnet-5",
+          "title": "Model",
+          "type": "string"
+        },
+        "posterior": {
+          "$ref": "#/$defs/ElicitationPacket"
+        },
+        "prior": {
+          "$ref": "#/$defs/ElicitationPacket"
+        },
+        "replicates": {
+          "title": "Replicates",
+          "type": "integer"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "scoring_method": {
+          "title": "Scoring Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "run_id",
+        "replicates",
+        "scoring_method",
+        "prior",
+        "posterior"
+      ],
+      "title": "Elicitation",
       "type": "object"
     },
     "ElicitationPacket": {
-      "additionalProperties": false,
       "properties": {
         "allowed_labels": {
           "items": {
@@ -119,76 +189,19 @@
       "title": "ElicitationPacket",
       "type": "object"
     },
-    "ElicitationProtocol": {
-      "additionalProperties": false,
-      "properties": {
-        "model": {
-          "title": "Model",
-          "type": "string"
-        },
-        "posterior": {
-          "$ref": "#/$defs/ElicitationPacket"
-        },
-        "prior": {
-          "$ref": "#/$defs/ElicitationPacket"
-        },
-        "replicates": {
-          "maximum": 20,
-          "minimum": 3,
-          "title": "Replicates",
-          "type": "integer"
-        },
-        "run_id": {
-          "title": "Run Id",
-          "type": "string"
-        },
-        "scoring_method": {
-          "const": "beta_fractional_jsd_v1",
-          "title": "Scoring Method",
-          "type": "string"
-        }
-      },
-      "required": [
-        "model",
-        "run_id",
-        "replicates",
-        "scoring_method",
-        "prior",
-        "posterior"
-      ],
-      "title": "ElicitationProtocol",
-      "type": "object"
-    },
-    "EvidenceCandidate": {
-      "additionalProperties": false,
+    "EvidenceSource": {
       "properties": {
         "evidence_quote": {
           "title": "Evidence Quote",
           "type": "string"
         },
-        "message_seq": {
-          "title": "Message Seq",
-          "type": "integer"
-        },
         "quote_end": {
-          "minimum": 1,
           "title": "Quote End",
           "type": "integer"
         },
         "quote_start": {
-          "minimum": 0,
           "title": "Quote Start",
           "type": "integer"
-        },
-        "rank": {
-          "minimum": 1,
-          "title": "Rank",
-          "type": "integer"
-        },
-        "relevance_score": {
-          "minimum": 0,
-          "title": "Relevance Score",
-          "type": "number"
         },
         "role": {
           "enum": [
@@ -198,7 +211,203 @@
           "title": "Role",
           "type": "string"
         },
-        "session_title": {
+        "source_message_hash": {
+          "title": "Source Message Hash",
+          "type": "string"
+        },
+        "source_message_id": {
+          "title": "Source Message Id",
+          "type": "string"
+        },
+        "source_session_id": {
+          "title": "Source Session Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_session_id",
+        "source_message_id",
+        "source_message_hash",
+        "role",
+        "evidence_quote",
+        "quote_start",
+        "quote_end"
+      ],
+      "title": "EvidenceSource",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "KnowledgeDraft": {
+      "additionalProperties": false,
+      "description": "A prepared record; the host adds samples, author, and any reason before approval.",
+      "properties": {
+        "aliases": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Author"
+        },
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "elicitation_model": {
+          "const": "claude-sonnet-5",
+          "title": "Elicitation Model",
+          "type": "string"
+        },
+        "elicitation_run_id": {
+          "minLength": 1,
+          "title": "Elicitation Run Id",
+          "type": "string"
+        },
+        "evidence_quote": {
+          "description": "Text copied exactly from one source turn that supports the proposition.",
+          "title": "Evidence Quote",
+          "type": "string"
+        },
+        "kind": {
+          "description": "decision, constraint, exception, abandoned, or belief_revision.",
+          "enum": [
+            "decision",
+            "constraint",
+            "exception",
+            "abandoned",
+            "belief_revision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "proposition": {
+          "description": "Statement whose belief or action relevance changed.",
+          "minLength": 1,
+          "title": "Proposition",
+          "type": "string"
+        },
+        "rationale": {
+          "description": "Why it should change future decisions or actions.",
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required only for abandoned.",
+          "title": "Reason"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Non-empty structured applicability scope stated in the conversation, such as project, system, method, customer, or environment.",
+          "minLength": 1,
+          "title": "Scope",
+          "type": "object"
+        },
+        "source_message_id": {
+          "minLength": 1,
+          "title": "Source Message Id",
+          "type": "string"
+        },
+        "supersedes_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Approved item this corrects; history stays auditable.",
+          "title": "Supersedes Id"
+        }
+      },
+      "required": [
+        "kind",
+        "proposition",
+        "rationale",
+        "scope",
+        "evidence_quote",
+        "source_message_id",
+        "elicitation_model",
+        "elicitation_run_id",
+        "author"
+      ],
+      "title": "KnowledgeDraft",
+      "type": "object"
+    },
+    "KnowledgeEvidence": {
+      "properties": {
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "evidence_quote": {
+          "title": "Evidence Quote",
+          "type": "string"
+        },
+        "evidence_type": {
+          "const": "approved_knowledge",
+          "default": "approved_knowledge",
+          "title": "Evidence Type",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "decision",
+            "constraint",
+            "exception",
+            "abandoned",
+            "belief_revision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "knowledge_id": {
+          "title": "Knowledge Id",
+          "type": "string"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "reason": {
           "anyOf": [
             {
               "type": "string"
@@ -207,8 +416,33 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Session Title"
+          "title": "Reason"
+        },
+        "relationship": {
+          "enum": [
+            "knowledge_author",
+            "knowledge_reviewer"
+          ],
+          "title": "Relationship",
+          "type": "string"
+        },
+        "relevance": {
+          "title": "Relevance",
+          "type": "number"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Scope",
+          "type": "object"
+        },
+        "scope_compatibility": {
+          "$ref": "#/$defs/ScopeCompatibility"
+        },
+        "source_drifted": {
+          "title": "Source Drifted",
+          "type": "boolean"
         },
         "source_message_hash": {
           "title": "Source Message Hash",
@@ -218,9 +452,169 @@
           "title": "Source Message Id",
           "type": "string"
         },
-        "source_researcher": {
+        "source_session_id": {
+          "title": "Source Session Id",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "relationship",
+        "knowledge_id",
+        "kind",
+        "summary",
+        "rationale",
+        "reason",
+        "scope",
+        "conditions",
+        "scope_compatibility",
+        "source_session_id",
+        "source_message_id",
+        "source_message_hash",
+        "evidence_quote",
+        "source_drifted",
+        "relevance",
+        "created_at"
+      ],
+      "title": "KnowledgeEvidence",
+      "type": "object"
+    },
+    "KnowledgeItem": {
+      "additionalProperties": false,
+      "properties": {
+        "aliases": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        },
+        "approved_by": {
+          "title": "Approved By",
+          "type": "string"
+        },
+        "author": {
+          "minLength": 1,
+          "title": "Author",
+          "type": "string"
+        },
+        "bayesian_surprise_bits": {
+          "title": "Bayesian Surprise Bits",
+          "type": "number"
+        },
+        "belief_shift": {
+          "title": "Belief Shift",
+          "type": "number"
+        },
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "elicitation_model": {
+          "const": "claude-sonnet-5",
+          "title": "Elicitation Model",
+          "type": "string"
+        },
+        "elicitation_run_id": {
+          "minLength": 1,
+          "title": "Elicitation Run Id",
+          "type": "string"
+        },
+        "evidence_quote": {
+          "description": "Text copied exactly from one source turn that supports the proposition.",
+          "title": "Evidence Quote",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "is_superseded": {
+          "title": "Is Superseded",
+          "type": "boolean"
+        },
+        "kind": {
+          "description": "decision, constraint, exception, abandoned, or belief_revision.",
+          "enum": [
+            "decision",
+            "constraint",
+            "exception",
+            "abandoned",
+            "belief_revision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "posterior_mean": {
+          "title": "Posterior Mean",
+          "type": "number"
+        },
+        "posterior_samples": {
+          "description": "Repeated judgments of the proposition: numbers in [0,1] or allowed belief labels.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 3,
+          "title": "Posterior Samples",
+          "type": "array"
+        },
+        "prior_mean": {
+          "title": "Prior Mean",
+          "type": "number"
+        },
+        "prior_samples": {
+          "description": "Repeated judgments of the proposition: numbers in [0,1] or allowed belief labels.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 3,
+          "title": "Prior Samples",
+          "type": "array"
+        },
+        "proposition": {
+          "description": "Statement whose belief or action relevance changed.",
+          "minLength": 1,
+          "title": "Proposition",
+          "type": "string"
+        },
+        "rationale": {
+          "description": "Why it should change future decisions or actions.",
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "reason": {
           "anyOf": [
             {
+              "minLength": 1,
               "type": "string"
             },
             {
@@ -228,65 +622,1101 @@
             }
           ],
           "default": null,
-          "title": "Source Researcher"
+          "description": "Required only for abandoned.",
+          "title": "Reason"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Non-empty structured applicability scope stated in the conversation, such as project, system, method, customer, or environment.",
+          "minLength": 1,
+          "title": "Scope",
+          "type": "object"
+        },
+        "scoring_method": {
+          "title": "Scoring Method",
+          "type": "string"
+        },
+        "source_drifted": {
+          "title": "Source Drifted",
+          "type": "boolean"
+        },
+        "source_message_hash": {
+          "title": "Source Message Hash",
+          "type": "string"
+        },
+        "source_message_id": {
+          "minLength": 1,
+          "title": "Source Message Id",
+          "type": "string"
         },
         "source_session_id": {
           "title": "Source Session Id",
           "type": "string"
+        },
+        "supersedes_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Approved item this corrects; history stays auditable.",
+          "title": "Supersedes Id"
+        },
+        "surprising": {
+          "title": "Surprising",
+          "type": "boolean"
         }
       },
       "required": [
-        "rank",
+        "kind",
+        "proposition",
+        "rationale",
+        "scope",
+        "evidence_quote",
         "source_message_id",
+        "elicitation_model",
+        "elicitation_run_id",
+        "prior_samples",
+        "posterior_samples",
+        "author",
+        "id",
+        "approved_by",
         "source_session_id",
         "source_message_hash",
-        "message_seq",
-        "role",
-        "evidence_quote",
-        "quote_start",
-        "quote_end",
-        "relevance_score"
+        "source_drifted",
+        "is_superseded",
+        "scoring_method",
+        "prior_mean",
+        "posterior_mean",
+        "belief_shift",
+        "bayesian_surprise_bits",
+        "surprising",
+        "created_at"
       ],
-      "title": "EvidenceCandidate",
+      "title": "KnowledgeItem",
       "type": "object"
     },
-    "FindingRelationship": {
+    "KnowledgeRecord": {
       "additionalProperties": false,
+      "description": "One reviewed Memory Diff. Calculated fields are derived on write, never supplied.",
       "properties": {
-        "finding_id": {
-          "title": "Finding Id",
+        "aliases": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        },
+        "author": {
+          "minLength": 1,
+          "title": "Author",
           "type": "string"
         },
-        "relationship": {
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "elicitation_model": {
+          "const": "claude-sonnet-5",
+          "title": "Elicitation Model",
+          "type": "string"
+        },
+        "elicitation_run_id": {
+          "minLength": 1,
+          "title": "Elicitation Run Id",
+          "type": "string"
+        },
+        "evidence_quote": {
+          "description": "Text copied exactly from one source turn that supports the proposition.",
+          "title": "Evidence Quote",
+          "type": "string"
+        },
+        "kind": {
+          "description": "decision, constraint, exception, abandoned, or belief_revision.",
           "enum": [
-            "duplicate_of",
-            "extends",
-            "related",
-            "contradicts"
+            "decision",
+            "constraint",
+            "exception",
+            "abandoned",
+            "belief_revision"
           ],
-          "title": "Relationship",
+          "title": "Kind",
+          "type": "string"
+        },
+        "posterior_samples": {
+          "description": "Repeated judgments of the proposition: numbers in [0,1] or allowed belief labels.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 3,
+          "title": "Posterior Samples",
+          "type": "array"
+        },
+        "prior_samples": {
+          "description": "Repeated judgments of the proposition: numbers in [0,1] or allowed belief labels.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 3,
+          "title": "Prior Samples",
+          "type": "array"
+        },
+        "proposition": {
+          "description": "Statement whose belief or action relevance changed.",
+          "minLength": 1,
+          "title": "Proposition",
+          "type": "string"
+        },
+        "rationale": {
+          "description": "Why it should change future decisions or actions.",
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required only for abandoned.",
+          "title": "Reason"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Non-empty structured applicability scope stated in the conversation, such as project, system, method, customer, or environment.",
+          "minLength": 1,
+          "title": "Scope",
+          "type": "object"
+        },
+        "source_message_id": {
+          "minLength": 1,
+          "title": "Source Message Id",
+          "type": "string"
+        },
+        "supersedes_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Approved item this corrects; history stays auditable.",
+          "title": "Supersedes Id"
+        }
+      },
+      "required": [
+        "kind",
+        "proposition",
+        "rationale",
+        "scope",
+        "evidence_quote",
+        "source_message_id",
+        "elicitation_model",
+        "elicitation_run_id",
+        "prior_samples",
+        "posterior_samples",
+        "author"
+      ],
+      "title": "KnowledgeRecord",
+      "type": "object"
+    },
+    "MemoryDiff": {
+      "properties": {
+        "elicitation": {
+          "$ref": "#/$defs/Elicitation"
+        },
+        "missing_record_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Record Fields",
+          "type": "array"
+        },
+        "prior_knowledge": {
+          "items": {
+            "$ref": "#/$defs/PriorKnowledge"
+          },
+          "title": "Prior Knowledge",
+          "type": "array"
+        },
+        "record_template": {
+          "$ref": "#/$defs/KnowledgeDraft"
+        },
+        "source": {
+          "$ref": "#/$defs/EvidenceSource"
+        }
+      },
+      "required": [
+        "source",
+        "prior_knowledge",
+        "elicitation",
+        "record_template",
+        "missing_record_fields"
+      ],
+      "title": "MemoryDiff",
+      "type": "object"
+    },
+    "MemoryDiffRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "context_chars": {
+          "default": 6000,
+          "description": "Maximum conversation context per side.",
+          "maximum": 20000,
+          "minimum": 1000,
+          "title": "Context Chars",
+          "type": "integer"
+        },
+        "current_actor": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Authenticated host actor; not a conversational input.",
+          "title": "Current Actor"
+        },
+        "elicitation_model": {
+          "const": "claude-sonnet-5",
+          "default": "claude-sonnet-5",
+          "title": "Elicitation Model",
+          "type": "string"
+        },
+        "evidence_quote": {
+          "description": "Text copied exactly from one source turn that supports the proposition.",
+          "title": "Evidence Quote",
+          "type": "string"
+        },
+        "kind": {
+          "default": "decision",
+          "description": "decision, constraint, exception, abandoned, or belief_revision.",
+          "enum": [
+            "decision",
+            "constraint",
+            "exception",
+            "abandoned",
+            "belief_revision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "proposition": {
+          "description": "Statement whose belief or action relevance changed.",
+          "minLength": 1,
+          "title": "Proposition",
+          "type": "string"
+        },
+        "rationale": {
+          "description": "Why it should change future decisions or actions.",
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "replicates": {
+          "default": 5,
+          "description": "Judgments per elicitation packet.",
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Replicates",
+          "type": "integer"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Non-empty structured applicability scope stated in the conversation, such as project, system, method, customer, or environment.",
+          "minLength": 1,
+          "title": "Scope",
+          "type": "object"
+        },
+        "session_title": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Title"
+        },
+        "source_message_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Already-stored source message (<session-id>:<seq>) instead of turns.",
+          "title": "Source Message Id"
+        },
+        "source_turns": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Turn"
+              },
+              "maxItems": 12,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Relevant recent user/assistant turns copied exactly from the active conversation. Breadcrumbs stores an idempotent, content-addressed snapshot. Never ask the user to transcribe or quote them.",
+          "title": "Source Turns"
+        }
+      },
+      "required": [
+        "proposition",
+        "rationale",
+        "scope",
+        "evidence_quote"
+      ],
+      "title": "MemoryDiffRequest",
+      "type": "object"
+    },
+    "PeopleRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_limit": {
+          "default": 5,
+          "description": "Maximum evidence per person.",
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Evidence Limit",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 5,
+          "description": "Maximum ranked people.",
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional scope subset stated in the conversation; never inferred.",
+          "title": "Scope"
+        },
+        "topic": {
+          "description": "The subject only, e.g. 'canary rollout' rather than 'who knows about canary rollout'.",
+          "minLength": 1,
+          "title": "Topic",
           "type": "string"
         }
       },
       "required": [
-        "finding_id",
-        "relationship"
+        "topic"
       ],
-      "title": "FindingRelationship",
+      "title": "PeopleRequest",
       "type": "object"
     },
-    "LiveInteractionTurn": {
+    "PeopleResult": {
+      "properties": {
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "people": {
+          "items": {
+            "$ref": "#/$defs/PersonContext"
+          },
+          "title": "People",
+          "type": "array"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Scope"
+        },
+        "topic": {
+          "title": "Topic",
+          "type": "string"
+        }
+      },
+      "required": [
+        "topic",
+        "scope",
+        "message",
+        "people"
+      ],
+      "title": "PeopleResult",
+      "type": "object"
+    },
+    "PersonContext": {
+      "properties": {
+        "approved_knowledge_count": {
+          "title": "Approved Knowledge Count",
+          "type": "integer"
+        },
+        "best_relevance": {
+          "title": "Best Relevance",
+          "type": "number"
+        },
+        "conversation_count": {
+          "title": "Conversation Count",
+          "type": "integer"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/KnowledgeEvidence"
+              },
+              {
+                "$ref": "#/$defs/ConversationEvidence"
+              }
+            ]
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "evidence_count": {
+          "title": "Evidence Count",
+          "type": "integer"
+        },
+        "person_id": {
+          "title": "Person Id",
+          "type": "string"
+        },
+        "relationships": {
+          "items": {
+            "enum": [
+              "knowledge_author",
+              "knowledge_reviewer",
+              "session_actor"
+            ],
+            "type": "string"
+          },
+          "title": "Relationships",
+          "type": "array"
+        }
+      },
+      "required": [
+        "person_id",
+        "display_name",
+        "relationships",
+        "best_relevance",
+        "approved_knowledge_count",
+        "conversation_count",
+        "evidence_count",
+        "evidence"
+      ],
+      "title": "PersonContext",
+      "type": "object"
+    },
+    "PriorKnowledge": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "decision",
+            "constraint",
+            "exception",
+            "abandoned",
+            "belief_revision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "posterior_mean": {
+          "title": "Posterior Mean",
+          "type": "number"
+        },
+        "proposition": {
+          "title": "Proposition",
+          "type": "string"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Scope",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "proposition",
+        "scope",
+        "posterior_mean"
+      ],
+      "title": "PriorKnowledge",
+      "type": "object"
+    },
+    "QueryMatch": {
+      "description": "Why one query matched, so the agent can judge results and rephrase.",
+      "properties": {
+        "query": {
+          "title": "Query",
+          "type": "string"
+        },
+        "rank": {
+          "title": "Rank",
+          "type": "integer"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "query",
+        "rank",
+        "score"
+      ],
+      "title": "QueryMatch",
+      "type": "object"
+    },
+    "RecallRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "include_superseded": {
+          "default": false,
+          "description": "Include history superseded by newer approved knowledge.",
+          "title": "Include Superseded",
+          "type": "boolean"
+        },
+        "kinds": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "decision",
+                  "constraint",
+                  "exception",
+                  "abandoned",
+                  "belief_revision"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional kinds to include.",
+          "title": "Kinds"
+        },
+        "limit": {
+          "default": 10,
+          "description": "Maximum results.",
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "queries": {
+          "anyOf": [
+            {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "One or more searches for the same need, e.g. rephrasings, synonyms, or exact names; results are fused. Quote a phrase to require it. Omit to list the most recent items.",
+          "title": "Queries"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional scope subset stated in the conversation; never inferred.",
+          "title": "Scope"
+        },
+        "strict_scope": {
+          "default": false,
+          "description": "Require every requested scope field to be compatible, not just unknown.",
+          "title": "Strict Scope",
+          "type": "boolean"
+        }
+      },
+      "title": "RecallRequest",
+      "type": "object"
+    },
+    "RecalledKnowledge": {
+      "additionalProperties": false,
+      "properties": {
+        "aliases": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        },
+        "approved_by": {
+          "title": "Approved By",
+          "type": "string"
+        },
+        "author": {
+          "minLength": 1,
+          "title": "Author",
+          "type": "string"
+        },
+        "bayesian_surprise_bits": {
+          "title": "Bayesian Surprise Bits",
+          "type": "number"
+        },
+        "belief_shift": {
+          "title": "Belief Shift",
+          "type": "number"
+        },
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "elicitation_model": {
+          "const": "claude-sonnet-5",
+          "title": "Elicitation Model",
+          "type": "string"
+        },
+        "elicitation_run_id": {
+          "minLength": 1,
+          "title": "Elicitation Run Id",
+          "type": "string"
+        },
+        "evidence_quote": {
+          "description": "Text copied exactly from one source turn that supports the proposition.",
+          "title": "Evidence Quote",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "is_superseded": {
+          "title": "Is Superseded",
+          "type": "boolean"
+        },
+        "kind": {
+          "description": "decision, constraint, exception, abandoned, or belief_revision.",
+          "enum": [
+            "decision",
+            "constraint",
+            "exception",
+            "abandoned",
+            "belief_revision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "matched_via_history": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Matched Via History",
+          "type": "array"
+        },
+        "matches": {
+          "items": {
+            "$ref": "#/$defs/QueryMatch"
+          },
+          "title": "Matches",
+          "type": "array"
+        },
+        "posterior_mean": {
+          "title": "Posterior Mean",
+          "type": "number"
+        },
+        "posterior_samples": {
+          "description": "Repeated judgments of the proposition: numbers in [0,1] or allowed belief labels.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 3,
+          "title": "Posterior Samples",
+          "type": "array"
+        },
+        "prior_mean": {
+          "title": "Prior Mean",
+          "type": "number"
+        },
+        "prior_samples": {
+          "description": "Repeated judgments of the proposition: numbers in [0,1] or allowed belief labels.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 3,
+          "title": "Prior Samples",
+          "type": "array"
+        },
+        "proposition": {
+          "description": "Statement whose belief or action relevance changed.",
+          "minLength": 1,
+          "title": "Proposition",
+          "type": "string"
+        },
+        "rationale": {
+          "description": "Why it should change future decisions or actions.",
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required only for abandoned.",
+          "title": "Reason"
+        },
+        "retrieval_score": {
+          "title": "Retrieval Score",
+          "type": "number"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Non-empty structured applicability scope stated in the conversation, such as project, system, method, customer, or environment.",
+          "minLength": 1,
+          "title": "Scope",
+          "type": "object"
+        },
+        "scope_compatibility": {
+          "$ref": "#/$defs/ScopeCompatibility"
+        },
+        "scoring_method": {
+          "title": "Scoring Method",
+          "type": "string"
+        },
+        "source_drifted": {
+          "title": "Source Drifted",
+          "type": "boolean"
+        },
+        "source_message_hash": {
+          "title": "Source Message Hash",
+          "type": "string"
+        },
+        "source_message_id": {
+          "minLength": 1,
+          "title": "Source Message Id",
+          "type": "string"
+        },
+        "source_session_id": {
+          "title": "Source Session Id",
+          "type": "string"
+        },
+        "supersedes_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Approved item this corrects; history stays auditable.",
+          "title": "Supersedes Id"
+        },
+        "surprising": {
+          "title": "Surprising",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "proposition",
+        "rationale",
+        "scope",
+        "evidence_quote",
+        "source_message_id",
+        "elicitation_model",
+        "elicitation_run_id",
+        "prior_samples",
+        "posterior_samples",
+        "author",
+        "id",
+        "approved_by",
+        "source_session_id",
+        "source_message_hash",
+        "source_drifted",
+        "is_superseded",
+        "scoring_method",
+        "prior_mean",
+        "posterior_mean",
+        "belief_shift",
+        "bayesian_surprise_bits",
+        "surprising",
+        "created_at",
+        "retrieval_score",
+        "matches",
+        "scope_compatibility",
+        "matched_via_history"
+      ],
+      "title": "RecalledKnowledge",
+      "type": "object"
+    },
+    "ScopeCompatibility": {
+      "properties": {
+        "compatible": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Compatible",
+          "type": "array"
+        },
+        "incompatible": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Incompatible",
+          "type": "array"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        },
+        "unknown": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unknown",
+          "type": "array"
+        }
+      },
+      "required": [
+        "compatible",
+        "incompatible",
+        "unknown",
+        "score"
+      ],
+      "title": "ScopeCompatibility",
+      "type": "object"
+    },
+    "ScoringMethod": {
+      "const": "beta_kl_mean_shift_v2",
+      "type": "string"
+    },
+    "SurpriseMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "bayesian_surprise_bits": {
+          "title": "Bayesian Surprise Bits",
+          "type": "number"
+        },
+        "belief_shift": {
+          "title": "Belief Shift",
+          "type": "number"
+        },
+        "posterior_mean": {
+          "title": "Posterior Mean",
+          "type": "number"
+        },
+        "prior_mean": {
+          "title": "Prior Mean",
+          "type": "number"
+        },
+        "scoring_method": {
+          "$ref": "#/$defs/ScoringMethod",
+          "default": "beta_kl_mean_shift_v2"
+        },
+        "surprising": {
+          "title": "Surprising",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "prior_mean",
+        "posterior_mean",
+        "belief_shift",
+        "bayesian_surprise_bits",
+        "surprising"
+      ],
+      "title": "SurpriseMetrics",
+      "type": "object"
+    },
+    "SurpriseRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "posterior_samples": {
+          "description": "Repeated judgments of the proposition: numbers in [0,1] or allowed belief labels.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 3,
+          "title": "Posterior Samples",
+          "type": "array"
+        },
+        "prior_samples": {
+          "description": "Repeated judgments of the proposition: numbers in [0,1] or allowed belief labels.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 3,
+          "title": "Prior Samples",
+          "type": "array"
+        }
+      },
+      "required": [
+        "prior_samples",
+        "posterior_samples"
+      ],
+      "title": "SurpriseRequest",
+      "type": "object"
+    },
+    "Turn": {
       "additionalProperties": false,
       "properties": {
         "content": {
           "maxLength": 50000,
-          "minLength": 1,
           "title": "Content",
           "type": "string"
         },
         "created_at": {
           "anyOf": [
             {
+              "format": "date-time",
               "type": "string"
             },
             {
@@ -309,815 +1739,27 @@
         "role",
         "content"
       ],
-      "title": "LiveInteractionTurn",
+      "title": "Turn",
       "type": "object"
     },
-    "Match": {
+    "WriteKnowledgeRequest": {
       "additionalProperties": false,
       "properties": {
-        "author": {
-          "title": "Author",
-          "type": "string"
-        },
-        "disease": {
-          "title": "Disease",
-          "type": "string"
-        },
-        "effect": {
-          "title": "Effect",
-          "type": "string"
-        },
-        "hypothesis_text": {
-          "title": "Hypothesis Text",
-          "type": "string"
-        },
-        "id": {
-          "title": "Id",
-          "type": "string"
-        },
-        "reason": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "title": "Reason"
-        },
-        "relationship": {
-          "enum": [
-            "duplicate_of",
-            "extends",
-            "related"
-          ],
-          "title": "Relationship",
-          "type": "string"
-        },
-        "status": {
-          "enum": [
-            "confirmed",
-            "in_progress",
-            "abandoned"
-          ],
-          "title": "Status",
-          "type": "string"
-        }
-      },
-      "required": [
-        "id",
-        "status",
-        "relationship",
-        "hypothesis_text",
-        "effect",
-        "reason",
-        "author",
-        "disease"
-      ],
-      "title": "Match",
-      "type": "object"
-    },
-    "MemoryDiffPreparationInput": {
-      "additionalProperties": false,
-      "properties": {
-        "candidate_limit": {
-          "default": 3,
-          "maximum": 5,
-          "minimum": 1,
-          "title": "Candidate Limit",
-          "type": "integer"
-        },
-        "candidate_rank": {
-          "default": 1,
-          "maximum": 5,
-          "minimum": 1,
-          "title": "Candidate Rank",
-          "type": "integer"
-        },
-        "context_chars": {
-          "default": 6000,
-          "maximum": 20000,
-          "minimum": 1000,
-          "title": "Context Chars",
-          "type": "integer"
-        },
-        "current_actor": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Current Actor"
-        },
-        "elicitation_model": {
-          "default": "claude-sonnet-5",
-          "title": "Elicitation Model",
-          "type": "string"
-        },
-        "evidence_query": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Evidence Query"
-        },
-        "kind": {
-          "default": "decision",
-          "enum": [
-            "decision",
-            "constraint",
-            "exception",
-            "abandoned",
-            "belief_revision"
-          ],
-          "title": "Kind",
-          "type": "string"
-        },
-        "live_context": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/LiveInteractionTurn"
-              },
-              "maxItems": 12,
-              "minItems": 1,
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Live Context"
-        },
-        "live_session_title": {
-          "anyOf": [
-            {
-              "maxLength": 240,
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Live Session Title"
-        },
-        "proposition": {
+        "approved_by": {
+          "description": "Person who explicitly approved this exact Memory Diff, from the approval event or authenticated host identity.",
           "minLength": 1,
-          "title": "Proposition",
+          "title": "Approved By",
           "type": "string"
         },
-        "rationale": {
-          "minLength": 1,
-          "title": "Rationale",
-          "type": "string"
-        },
-        "replicates": {
-          "default": 5,
-          "maximum": 20,
-          "minimum": 3,
-          "title": "Replicates",
-          "type": "integer"
-        },
-        "scope": {
-          "additionalProperties": true,
-          "title": "Scope",
-          "type": "object"
-        },
-        "source_session_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Source Session Id"
+        "candidate": {
+          "$ref": "#/$defs/KnowledgeRecord"
         }
       },
       "required": [
-        "proposition",
-        "rationale",
-        "scope"
+        "candidate",
+        "approved_by"
       ],
-      "title": "MemoryDiffPreparationInput",
-      "type": "object"
-    },
-    "MemoryDiffPreparationResult": {
-      "additionalProperties": false,
-      "properties": {
-        "author_hint": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "title": "Author Hint"
-        },
-        "author_hint_source": {
-          "enum": [
-            "authenticated_actor",
-            "unavailable"
-          ],
-          "title": "Author Hint Source",
-          "type": "string"
-        },
-        "captured_turn_count": {
-          "minimum": 0,
-          "title": "Captured Turn Count",
-          "type": "integer"
-        },
-        "draft_id": {
-          "title": "Draft Id",
-          "type": "string"
-        },
-        "elicitation": {
-          "$ref": "#/$defs/ElicitationProtocol"
-        },
-        "evidence_candidates": {
-          "items": {
-            "$ref": "#/$defs/EvidenceCandidate"
-          },
-          "title": "Evidence Candidates",
-          "type": "array"
-        },
-        "missing_record_fields": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Missing Record Fields",
-          "type": "array"
-        },
-        "record_template": {
-          "additionalProperties": true,
-          "title": "Record Template",
-          "type": "object"
-        },
-        "selected_evidence": {
-          "$ref": "#/$defs/EvidenceCandidate"
-        },
-        "selection_warning": {
-          "title": "Selection Warning",
-          "type": "string"
-        },
-        "source_origin": {
-          "enum": [
-            "stored_interaction",
-            "captured_live_context"
-          ],
-          "title": "Source Origin",
-          "type": "string"
-        }
-      },
-      "required": [
-        "draft_id",
-        "source_origin",
-        "captured_turn_count",
-        "selected_evidence",
-        "evidence_candidates",
-        "elicitation",
-        "author_hint",
-        "author_hint_source",
-        "record_template",
-        "missing_record_fields",
-        "selection_warning"
-      ],
-      "title": "MemoryDiffPreparationResult",
-      "type": "object"
-    },
-    "RecallFinding": {
-      "additionalProperties": false,
-      "properties": {
-        "author": {
-          "title": "Author",
-          "type": "string"
-        },
-        "category": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Category"
-        },
-        "disease": {
-          "title": "Disease",
-          "type": "string"
-        },
-        "effect": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Effect"
-        },
-        "entities": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Entities",
-          "type": "array"
-        },
-        "hypothesis_text": {
-          "title": "Hypothesis Text",
-          "type": "string"
-        },
-        "id": {
-          "title": "Id",
-          "type": "string"
-        },
-        "markdown": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Markdown"
-        },
-        "n": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "N"
-        },
-        "note": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Note"
-        },
-        "provenance": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Provenance"
-        },
-        "reason": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Reason"
-        },
-        "relationships": {
-          "items": {
-            "$ref": "#/$defs/FindingRelationship"
-          },
-          "title": "Relationships",
-          "type": "array"
-        },
-        "resources": {
-          "items": {
-            "$ref": "#/$defs/Resource"
-          },
-          "title": "Resources",
-          "type": "array"
-        },
-        "score": {
-          "minimum": 0,
-          "title": "Score",
-          "type": "number"
-        },
-        "signature": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Signature"
-        },
-        "source_session_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Source Session Id"
-        },
-        "source_type": {
-          "anyOf": [
-            {
-              "enum": [
-                "internal",
-                "external"
-              ],
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Source Type"
-        },
-        "status": {
-          "enum": [
-            "confirmed",
-            "in-progress",
-            "abandoned",
-            "open"
-          ],
-          "title": "Status",
-          "type": "string"
-        },
-        "timestamp": {
-          "title": "Timestamp",
-          "type": "string"
-        }
-      },
-      "required": [
-        "id",
-        "disease",
-        "hypothesis_text",
-        "status",
-        "author",
-        "timestamp",
-        "entities",
-        "resources",
-        "score"
-      ],
-      "title": "RecallFinding",
-      "type": "object"
-    },
-    "RecallFindingsInput": {
-      "additionalProperties": false,
-      "properties": {
-        "limit": {
-          "default": 10,
-          "maximum": 100,
-          "minimum": 1,
-          "title": "Limit",
-          "type": "integer"
-        },
-        "query": {
-          "minLength": 1,
-          "title": "Query",
-          "type": "string"
-        }
-      },
-      "required": [
-        "query"
-      ],
-      "title": "RecallFindingsInput",
-      "type": "object"
-    },
-    "RecallFindingsResult": {
-      "additionalProperties": false,
-      "properties": {
-        "findings": {
-          "items": {
-            "$ref": "#/$defs/RecallFinding"
-          },
-          "title": "Findings",
-          "type": "array"
-        },
-        "query": {
-          "title": "Query",
-          "type": "string"
-        },
-        "searched": {
-          "minimum": 0,
-          "title": "Searched",
-          "type": "integer"
-        },
-        "sources_searched": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Sources Searched",
-          "type": "array"
-        }
-      },
-      "required": [
-        "query",
-        "findings",
-        "searched",
-        "sources_searched"
-      ],
-      "title": "RecallFindingsResult",
-      "type": "object"
-    },
-    "RenderWikiInput": {
-      "additionalProperties": false,
-      "properties": {
-        "finding_ids": {
-          "anyOf": [
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Finding Ids"
-        },
-        "title": {
-          "default": "Breadcrumbs research memory",
-          "title": "Title",
-          "type": "string"
-        }
-      },
-      "title": "RenderWikiInput",
-      "type": "object"
-    },
-    "RenderWikiResult": {
-      "additionalProperties": false,
-      "properties": {
-        "finding_ids": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Finding Ids",
-          "type": "array"
-        },
-        "markdown": {
-          "title": "Markdown",
-          "type": "string"
-        }
-      },
-      "required": [
-        "markdown",
-        "finding_ids"
-      ],
-      "title": "RenderWikiResult",
-      "type": "object"
-    },
-    "Resource": {
-      "additionalProperties": false,
-      "properties": {
-        "citation": {
-          "minLength": 1,
-          "title": "Citation",
-          "type": "string"
-        },
-        "type": {
-          "enum": [
-            "paper",
-            "database"
-          ],
-          "title": "Type",
-          "type": "string"
-        },
-        "url": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Url"
-        }
-      },
-      "required": [
-        "type",
-        "citation"
-      ],
-      "title": "Resource",
-      "type": "object"
-    },
-    "WriteFindingInput": {
-      "additionalProperties": false,
-      "properties": {
-        "author": {
-          "title": "Author",
-          "type": "string"
-        },
-        "category": {
-          "title": "Category",
-          "type": "string"
-        },
-        "created_at": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Created At"
-        },
-        "disease": {
-          "title": "Disease",
-          "type": "string"
-        },
-        "effect": {
-          "title": "Effect",
-          "type": "string"
-        },
-        "entities": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Entities",
-          "type": "array"
-        },
-        "hypothesis_text": {
-          "title": "Hypothesis Text",
-          "type": "string"
-        },
-        "id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Id"
-        },
-        "markdown": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Markdown"
-        },
-        "n": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "N"
-        },
-        "note": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Note"
-        },
-        "provenance": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Provenance"
-        },
-        "reason": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Reason"
-        },
-        "resources": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/Resource"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Resources"
-        },
-        "signature": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Signature"
-        },
-        "source_session_id": {
-          "title": "Source Session Id",
-          "type": "string"
-        },
-        "source_type": {
-          "enum": [
-            "internal",
-            "external"
-          ],
-          "title": "Source Type",
-          "type": "string"
-        },
-        "status": {
-          "enum": [
-            "confirmed",
-            "in-progress",
-            "abandoned",
-            "open"
-          ],
-          "title": "Status",
-          "type": "string"
-        }
-      },
-      "required": [
-        "category",
-        "disease",
-        "hypothesis_text",
-        "entities",
-        "effect",
-        "status",
-        "author",
-        "source_session_id",
-        "source_type"
-      ],
-      "title": "WriteFindingInput",
+      "title": "WriteKnowledgeRequest",
       "type": "object"
     }
   },

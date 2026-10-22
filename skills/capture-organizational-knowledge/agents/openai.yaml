@@ -1,0 +1,7 @@
+interface:
+  display_name: "Capture Organizational Knowledge"
+  short_description: "Recall and capture approved organizational memory"
+  default_prompt: "Use $capture-organizational-knowledge to recall relevant decisions and capture any durable knowledge from this conversation."
+
+policy:
+  allow_implicit_invocation: true

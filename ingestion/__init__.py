@@ -1,1 +1,1 @@
-"""Local ingestion tools for Breadcrumbs' K Pro research-memory store."""
+"""Provider-neutral conversation ingestion for Breadcrumbs."""

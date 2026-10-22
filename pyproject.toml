@@ -4,28 +4,50 @@ build-backend = "hatchling.build"
 
 [project]
 name = "breadcrumbs-mcp"
-version = "0.6.0"
-description = "Breadcrumbs MCP wrapper for the internal research-memory database"
+version = "0.8.0"
+description = "Source-linked organizational knowledge memory for agents"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
   "mcp[cli]>=1.27,<2",
   "fastapi>=0.115,<1",
   "uvicorn>=0.34,<1",
-  "playwright>=1.45,<2",
-  "python-dotenv>=1.0,<2",
-  "fastembed>=0.8,<1",
+  "psycopg[binary]>=3.2,<4",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8.3,<9"]
+dev = ["pytest>=8.3,<9", "ruff>=0.14,<1", "mypy>=1.18,<2"]
 
 [project.scripts]
 breadcrumbs-mcp = "breadcrumbs.server:main"
+breadcrumbs-import = "ingestion.ingest_conversations:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/breadcrumbs", "ingestion"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"schema/graph_schema.sql" = "ingestion/graph_schema.sql"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "PIE", "RET", "RUF", "PT"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+explicit_package_bases = true
+files = ["src/breadcrumbs", "ingestion"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
