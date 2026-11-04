@@ -73,12 +73,15 @@ def _equal(left: JsonValue, right: JsonValue) -> bool:
 
 
 def _contains(have: JsonValue, want: JsonValue) -> bool:
-    """Strings compare case-insensitively, lists match on overlap, objects match as subsets."""
+    """Strings compare case-insensitively, lists match on overlap (an empty list matches only an
+    empty list), objects match as subsets."""
 
     if isinstance(want, dict):
         return isinstance(have, dict) and all(
             key in have and _contains(have[key], child) for key, child in want.items()
         )
+    if want == []:
+        return have == []
     wanted = want if isinstance(want, list) else [want]
     options = have if isinstance(have, list) else [have]
     return any(_equal(left, right) for left in options for right in wanted)
