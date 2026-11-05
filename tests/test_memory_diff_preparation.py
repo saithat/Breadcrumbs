@@ -59,6 +59,26 @@ def test_prior_is_informed_by_related_approved_knowledge(store, add_session):
     assert belief in prepared.elicitation.prior.context
     assert "belief: 1.00" in prepared.elicitation.prior.context
     assert belief in prepared.elicitation.posterior.context
+    assert "conditions: environments lt 4" in prepared.elicitation.prior.context
+
+
+def test_prior_preserves_abandonment_reasons_and_source_drift(store, add_session):
+    add_session("source", TURNS)
+    abandoned = store.write_knowledge(
+        record(kind="abandoned", reason="Three environments cannot support it."), "Morgan Lee"
+    )
+    add_session("source", [TURNS[0], ("assistant", f"{SOURCE}\nEdited later.")])
+    prepared = store.prepare_memory_diff(
+        request(
+            proposition="Broad canary rollout needs at least four validated environments.",
+            source_turns=[{"role": "user", "content": QUOTE}],
+        )
+    )
+    [prior] = prepared.prior_knowledge
+    assert (prior.id, prior.reason, prior.source_drifted) == (abandoned.id, abandoned.reason, True)
+    context = prepared.elicitation.prior.context
+    assert "abandoned because: Three environments cannot support it." in context
+    assert "source changed since approval" in context
 
 
 def test_evidence_must_be_verbatim_in_the_named_source(store, add_session, db):

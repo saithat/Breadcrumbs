@@ -7,7 +7,6 @@ not assert expertise or organizational role.
 from __future__ import annotations
 
 import hashlib
-import unicodedata
 from collections.abc import Sequence
 
 from ingestion.store import Connection
@@ -20,10 +19,13 @@ from .contracts import (
     PersonContext,
     RecalledKnowledge,
     Relationship,
+    clean_person_name,
+    is_person_name,
 )
 from .knowledge import ANY_TERM_TSQUERY
 
-NON_PERSON_NAMES = frozenset({"ai agent", "ai-agent", "assistant", "model", "unknown"})
+# Conversation evidence quotes the session's opening question, not the whole message.
+TOPIC_CHARS = 500
 _RELATIONSHIP_ORDER: dict[Relationship, int] = {
     "knowledge_author": 0,
     "knowledge_reviewer": 1,
@@ -31,17 +33,17 @@ _RELATIONSHIP_ORDER: dict[Relationship, int] = {
 }
 
 
-def clean_person_name(value: str) -> str:
-    return " ".join(unicodedata.normalize("NFKC", value).split())
-
-
 def person_id(name: str) -> str | None:
     """Stable provisional ID from the normalized name, or None for agents and unknown names."""
 
-    normalized = clean_person_name(name).casefold()
-    if not normalized or normalized in NON_PERSON_NAMES:
+    if not is_person_name(name):
         return None
+    normalized = clean_person_name(name).casefold()
     return "P-" + hashlib.sha256(normalized.encode()).hexdigest()[:12].upper()
+
+
+def _topic(content: str) -> str:
+    return content if len(content) <= TOPIC_CHARS else content[: TOPIC_CHARS - 1].rstrip() + "…"
 
 
 def find_people(
@@ -79,7 +81,7 @@ def find_people(
                     source_message_hash=item.source_message_hash,
                     evidence_quote=item.evidence_quote,
                     source_drifted=item.source_drifted,
-                    relevance=min(1.0, item.retrieval_score),
+                    relevance=min(1.0, max(0.0, item.retrieval_score)),
                     created_at=item.created_at,
                 ),
             )
@@ -107,7 +109,7 @@ def find_people(
             ConversationEvidence(
                 session_id=row["id"],
                 topic_message_id=row["message_id"],
-                topic=row["content"],
+                topic=_topic(row["content"]),
                 relevance=round(row["relevance"], 6),
                 created_at=row["created_at"],
             ),

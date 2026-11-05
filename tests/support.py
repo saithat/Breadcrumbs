@@ -1,5 +1,6 @@
 """Small shared examples of a reviewed decision and its source conversation."""
 
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
@@ -13,6 +14,10 @@ TURNS = [
     ("user", "Agreed; validate more environments before broad rollout."),
 ]
 PROPOSITION = "Treat the single-region canary as exploratory until more environments are validated."
+
+
+def sha256(text):
+    return hashlib.sha256(text.encode()).hexdigest()
 
 
 def concurrent_retries(call):
@@ -37,6 +42,7 @@ def candidate(**changes):
         "conditions": [{"field": "environments", "operator": "lt", "value": 4}],
         "evidence_quote": QUOTE,
         "source_message_id": "source:1",
+        "source_message_hash": sha256(SOURCE),
         "prior_samples": ["uncertain"] * 3,
         "posterior_samples": ["strongly_believe"] * 3,
         "elicitation_model": "claude-sonnet-5",

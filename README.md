@@ -15,8 +15,11 @@ keeps the exact quote and source message it came from.
    the prior already includes up to 25 related approved items, so knowledge the organization
    already has is not surprising. A candidate is `surprising` when the mean belief moves by at
    least 0.3; `bayesian_surprise_bits` is the KL divergence between the fitted Beta beliefs.
-3. **Approve.** A person reviews the Memory Diff, and the agent calls `write_knowledge`.
-   Corrections point at the item they replace with `supersedes_id`, so history stays auditable.
+3. **Approve.** A person reviews the Memory Diff, and the agent calls `write_knowledge` with the
+   prepared record, including the `source_message_hash` of the message that was reviewed; the
+   write is refused if that message has changed since. `approved_by` must name a person, not an
+   agent. Corrections point at the item they replace with `supersedes_id`, so history stays
+   auditable, and may keep the same proposition and source while changing scope or rationale.
 4. **Recall.** Later conversations call `recall_knowledge` with one or more queries. Each query is
    ranked with PostgreSQL full-text search, and the rankings are fused with reciprocal-rank
    fusion, so rephrasings and synonyms from the agent stand in for semantic search. Quoted phrases
@@ -35,6 +38,13 @@ uv sync
 uv run breadcrumbs-mcp                                # MCP over stdio
 BREADCRUMBS_TRANSPORT=http uv run breadcrumbs-mcp     # MCP at :8000/mcp, REST, /health
 ```
+
+Over HTTP, the REST routes and `/mcp` only accept requests whose `Host` (and `Origin`, when sent)
+is in `BREADCRUMBS_ALLOWED_HOSTS` (comma-separated, default `127.0.0.1,localhost,::1`), which
+blocks DNS-rebinding from web pages. Set `BREADCRUMBS_API_TOKEN` to require
+`Authorization: Bearer <token>` on everything except `/health`; the server refuses to bind a
+non-loopback `HOST` without one. The token authenticates the host, not the approver: `approved_by`
+is still whatever the host reports, so hosts must take it from their own approval event.
 
 If port 5432 is taken, set `BREADCRUMBS_POSTGRES_PORT` for Compose and match it in the URL.
 The schema is not migrated, so after a schema change recreate the database with

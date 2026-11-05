@@ -58,7 +58,6 @@ CREATE TABLE IF NOT EXISTS knowledge_items (
         to_tsvector('english', search_text)
     ) STORED,
     created_at             TIMESTAMPTZ NOT NULL,
-    UNIQUE(source_message_id, kind, proposition),
     UNIQUE(supersedes_id),
     CHECK (supersedes_id IS NULL OR supersedes_id <> id),
     CHECK (
@@ -67,6 +66,21 @@ CREATE TABLE IF NOT EXISTS knowledge_items (
     )
 );
 
+-- A correction may keep its source and proposition, so identity includes what it supersedes.
+-- Earlier schemas keyed on (source_message_id, kind, proposition) alone; drop that key in place.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'knowledge_items'::regclass
+          AND conname = 'knowledge_items_source_message_id_kind_proposition_key'
+    ) THEN
+        ALTER TABLE knowledge_items
+            DROP CONSTRAINT knowledge_items_source_message_id_kind_proposition_key;
+    END IF;
+END $$;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_items_identity
+    ON knowledge_items(source_message_id, kind, proposition, COALESCE(supersedes_id, ''));
 CREATE INDEX IF NOT EXISTS idx_knowledge_items_source
     ON knowledge_items(source_session_id, source_message_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_items_search

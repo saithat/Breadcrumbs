@@ -198,11 +198,104 @@ def test_numeric_conditions_partition_the_number_line(point, threshold):
     assert accepts("gt") != accepts("lte")
 
 
-@given(scopes, scopes, st.lists(conditions(), max_size=3), st.lists(conditions(), max_size=3))
-def test_more_conditions_never_clear_an_incompatibility(stored, requested, typed, extra):
-    before = scope_compatibility(stored, requested, typed)
-    after = scope_compatibility(stored, requested, typed + extra)
-    assert set(before.incompatible) <= set(after.incompatible)
+def _condition(operator, value, **extra):
+    return Condition.model_validate({"field": "x", "operator": operator, "value": value, **extra})
+
+
+@given(conditions(), json_values)
+def test_a_matching_scope_field_never_hides_a_failing_condition(condition, value):
+    requested = {condition.field: value}
+    alone = scope_compatibility({}, requested, [condition])
+    with_scope = scope_compatibility(requested, requested, [condition])
+    if alone.incompatible:
+        assert with_scope.incompatible == [condition.field]
+    if alone.unknown:
+        assert with_scope.compatible == []
+
+
+@given(conditions(), st.lists(json_scalars, min_size=1, max_size=4))
+def test_a_requested_list_satisfies_a_condition_only_if_every_element_does(condition, values):
+    def outcome(value):
+        result = scope_compatibility({}, {condition.field: value}, [condition])
+        return "compatible" if result.compatible else "incompatible" if result.incompatible else "?"
+
+    each = [outcome(value) for value in values]
+    expected = "incompatible" if "incompatible" in each else "?" if "?" in each else "compatible"
+    assert outcome(values) == expected
+
+
+@given(st.booleans(), st.integers(min_value=-2, max_value=2))
+def test_booleans_never_match_numbers(flag, number):
+    assert scope_compatibility({"x": flag}, {"x": number}).compatible == []
+    assert scope_compatibility({"x": number}, {"x": flag}).compatible == []
+    assert scope_compatibility({}, {"x": flag}, [_condition("eq", number)]).compatible == []
+    assert scope_compatibility({}, {"x": number}, [_condition("in", [flag])]).compatible == []
+
+
+@pytest.mark.parametrize(
+    ("condition", "requested"),
+    [
+        (_condition("ne", "eu"), {"value": None}),
+        (_condition("ne", "eu"), {"unit": "region"}),
+        (_condition("lt", 200, unit="ms"), 2),
+        (_condition("lt", 200, unit="ms"), {"value": 2, "unit": "s"}),
+        (_condition("lt", 4), "3"),
+        (_condition("gt", 4), "1_000"),
+        (_condition("eq", "eu"), []),
+    ],
+)
+def test_conditions_are_unknown_when_the_request_cannot_be_evaluated(condition, requested):
+    assert scope_compatibility({}, {"x": requested}, [condition]).unknown == ["x"]
+
+
+def test_condition_regressions_found_in_review():
+    excluded = [_condition("ne", "eu")]
+    assert scope_compatibility({}, {"x": ["eu"]}, excluded).incompatible == ["x"]
+    assert scope_compatibility({}, {"x": ["us", "eu"]}, excluded).incompatible == ["x"]
+    regions = [_condition("in", ["us", "eu"])]
+    assert scope_compatibility({}, {"x": ["us"]}, regions).compatible == ["x"]
+    latency = [_condition("lt", 200, unit="ms")]
+    assert scope_compatibility({}, {"x": {"value": 150, "unit": "MS"}}, latency).compatible == ["x"]
+
+
+spelled_keys = st.text(alphabet="aAbB_- ", min_size=1, max_size=4).filter(
+    lambda key: any(character.isalnum() for character in key)
+)
+
+
+def _respell(value, draw):
+    if isinstance(value, dict):
+        return {_respell_key(key, draw): _respell(child, draw) for key, child in value.items()}
+    if isinstance(value, list):
+        return [_respell(child, draw) for child in value]
+    return value
+
+
+def _respell_key(key, draw):
+    cased = "".join(c.upper() if draw(st.booleans()) else c for c in key)
+    return draw(st.sampled_from(["", "_", "-"])).join([cased, ""]) if key else cased
+
+
+@given(st.data(), st.dictionaries(scope_keys, json_values, min_size=1, max_size=4))
+def test_field_names_match_ignoring_case_and_punctuation_at_every_depth(data, scope):
+    respelled = _respell(scope, data.draw)
+    assert sorted(scope_compatibility(scope, respelled).compatible) == sorted(respelled)
+
+
+@given(st.dictionaries(spelled_keys, json_values, min_size=1, max_size=5))
+def test_scope_with_colliding_field_spellings_is_compatible_with_itself(scope):
+    assert sorted(scope_compatibility(scope, scope).compatible) == sorted(scope)
+
+
+@pytest.mark.parametrize("keys", [("🚀", "🛰"), ("!!", "??")])
+def test_symbol_only_field_names_do_not_collide(keys):
+    stored = {keys[0]: "a", keys[1]: "b"}
+    assert scope_compatibility(stored, {keys[1]: "a"}).incompatible == [keys[1]]
+
+
+def test_nested_objects_inside_lists_compare_case_insensitively():
+    stored = {"regions": [{"Name": "US"}, {"name": "EU"}]}
+    assert scope_compatibility(stored, {"regions": {"name": "us"}}).compatible == ["regions"]
 
 
 @given(st.dictionaries(scope_keys, st.text(alphabet="abcxyz -", min_size=1), min_size=1))

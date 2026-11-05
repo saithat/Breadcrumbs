@@ -10,6 +10,7 @@ hit@1, hit@5, and MRR@10 per retrieval configuration and query category:
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -46,6 +47,7 @@ def load(store: BreadcrumbsStore) -> dict[str, str]:
                 **item,
                 "evidence_quote": item["rationale"],
                 "source_message_id": f"{slug}:0",
+                "source_message_hash": hashlib.sha256(item["rationale"].encode()).hexdigest(),
                 "prior_samples": ["uncertain"] * 3,
                 "posterior_samples": ["believe"] * 3,
                 "elicitation_model": "claude-sonnet-5",

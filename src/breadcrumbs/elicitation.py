@@ -14,7 +14,7 @@ from typing import get_args
 
 from ingestion.models import Role
 
-from .contracts import ElicitationPacket, PriorKnowledge
+from .contracts import Condition, ElicitationPacket, PriorKnowledge
 from .knowledge import json_text
 from .surprise import BeliefLabel
 
@@ -38,15 +38,28 @@ def _block(message: SourceMessage, body: str) -> str:
     return f"[{message.role} | {message.id}]\n{body}".rstrip()
 
 
+def _condition(condition: Condition) -> str:
+    unit = f" {condition.unit}" if condition.unit else ""
+    return f"{condition.field} {condition.operator} {json_text(condition.value)}{unit}"
+
+
+def _knowledge_line(item: PriorKnowledge) -> str:
+    details = [f"scope: {json_text(item.scope)}"]
+    if item.conditions:
+        details.append("conditions: " + ", ".join(map(_condition, item.conditions)))
+    if item.reason is not None:
+        details.append(f"abandoned because: {item.reason}")
+    details.append(f"belief: {item.posterior_mean:.2f}")
+    if item.source_drifted:
+        details.append("source changed since approval; re-review before relying on it")
+    return f"- [{item.kind}] {item.proposition} ({'; '.join(details)})"
+
+
 def _knowledge_block(prior_knowledge: Sequence[PriorKnowledge]) -> str:
     if not prior_knowledge:
         return ""
     lines = ["Previously approved organizational knowledge (belief after its evidence):"]
-    lines += [
-        f"- [{item.kind}] {item.proposition} "
-        f"(scope: {json_text(item.scope)}; belief: {item.posterior_mean:.2f})"
-        for item in prior_knowledge
-    ]
+    lines += [_knowledge_line(item) for item in prior_knowledge]
     return "\n".join(lines)
 
 

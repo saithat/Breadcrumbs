@@ -330,6 +330,12 @@
           "title": "Scope",
           "type": "object"
         },
+        "source_message_hash": {
+          "description": "Hash of the source message as reviewed; writes fail if it has changed.",
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Message Hash",
+          "type": "string"
+        },
         "source_message_id": {
           "minLength": 1,
           "title": "Source Message Id",
@@ -357,6 +363,7 @@
         "scope",
         "evidence_quote",
         "source_message_id",
+        "source_message_hash",
         "elicitation_model",
         "elicitation_run_id",
         "author"
@@ -643,6 +650,8 @@
           "type": "boolean"
         },
         "source_message_hash": {
+          "description": "Hash of the source message as reviewed; writes fail if it has changed.",
+          "pattern": "^[0-9a-f]{64}$",
           "title": "Source Message Hash",
           "type": "string"
         },
@@ -681,6 +690,7 @@
         "scope",
         "evidence_quote",
         "source_message_id",
+        "source_message_hash",
         "elicitation_model",
         "elicitation_run_id",
         "prior_samples",
@@ -689,7 +699,6 @@
         "id",
         "approved_by",
         "source_session_id",
-        "source_message_hash",
         "source_drifted",
         "is_superseded",
         "scoring_method",
@@ -823,6 +832,12 @@
           "title": "Scope",
           "type": "object"
         },
+        "source_message_hash": {
+          "description": "Hash of the source message as reviewed; writes fail if it has changed.",
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Message Hash",
+          "type": "string"
+        },
         "source_message_id": {
           "minLength": 1,
           "title": "Source Message Id",
@@ -850,6 +865,7 @@
         "scope",
         "evidence_quote",
         "source_message_id",
+        "source_message_hash",
         "elicitation_model",
         "elicitation_run_id",
         "prior_samples",
@@ -1185,7 +1201,15 @@
       "type": "object"
     },
     "PriorKnowledge": {
+      "description": "Related approved knowledge shown to the prior, with what recall must preserve.",
       "properties": {
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
         "id": {
           "title": "Id",
           "type": "string"
@@ -1209,12 +1233,31 @@
           "title": "Proposition",
           "type": "string"
         },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reason"
+        },
         "scope": {
           "additionalProperties": {
             "$ref": "#/$defs/JsonValue"
           },
           "title": "Scope",
           "type": "object"
+        },
+        "source_drifted": {
+          "title": "Source Drifted",
+          "type": "boolean"
+        },
+        "source_message_id": {
+          "title": "Source Message Id",
+          "type": "string"
         }
       },
       "required": [
@@ -1222,6 +1265,10 @@
         "kind",
         "proposition",
         "scope",
+        "conditions",
+        "reason",
+        "source_message_id",
+        "source_drifted",
         "posterior_mean"
       ],
       "title": "PriorKnowledge",
@@ -1517,6 +1564,8 @@
           "type": "boolean"
         },
         "source_message_hash": {
+          "description": "Hash of the source message as reviewed; writes fail if it has changed.",
+          "pattern": "^[0-9a-f]{64}$",
           "title": "Source Message Hash",
           "type": "string"
         },
@@ -1555,6 +1604,7 @@
         "scope",
         "evidence_quote",
         "source_message_id",
+        "source_message_hash",
         "elicitation_model",
         "elicitation_run_id",
         "prior_samples",
@@ -1563,7 +1613,6 @@
         "id",
         "approved_by",
         "source_session_id",
-        "source_message_hash",
         "source_drifted",
         "is_superseded",
         "scoring_method",

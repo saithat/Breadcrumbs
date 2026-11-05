@@ -1,17 +1,28 @@
 """Typed contracts shared by the MCP tools and REST routes.
 
 Field aliases below carry their constraints and descriptions so the MCP tool signatures and the
-request models validate identically.
+request models validate identically. Scalars are marked ``Strict`` because FastMCP validates tool
+arguments in lax mode, which would otherwise coerce ``"10"`` or ``true`` where REST rejects them.
 """
 
 from __future__ import annotations
 
 import json
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Literal, Self
 
-from pydantic import AfterValidator, BaseModel, Field, JsonValue, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    Field,
+    JsonValue,
+    Strict,
+    StrictFloat,
+    StrictStr,
+    model_validator,
+)
 from pydantic.json_schema import models_json_schema
 
 from ingestion.models import JsonObject, Role, StrictModel, Text, Turn, VerbatimText
@@ -21,6 +32,25 @@ from .surprise import BeliefLabel, SurpriseMetrics, belief_score
 KnowledgeKind = Literal["decision", "constraint", "exception", "abandoned", "belief_revision"]
 ElicitationModel = Literal["claude-sonnet-5"]
 Relationship = Literal["knowledge_author", "knowledge_reviewer", "session_actor"]
+NON_PERSON_NAMES = frozenset(
+    {"ai", "ai agent", "ai-agent", "agent", "assistant", "bot", "llm", "model", "system", "unknown"}
+)
+SHA256_HEX = r"^[0-9a-f]{64}$"
+
+
+def clean_person_name(value: str) -> str:
+    return " ".join(unicodedata.normalize("NFKC", value).split())
+
+
+def is_person_name(value: str) -> bool:
+    normalized = clean_person_name(value).casefold()
+    return bool(normalized) and normalized not in NON_PERSON_NAMES
+
+
+def _person(value: str) -> str:
+    if not is_person_name(value):
+        raise ValueError("must name a person, not an agent or placeholder")
+    return value
 
 
 def _belief_sample(value: float | str) -> float | str:
@@ -78,7 +108,7 @@ SourceMessageId = Annotated[
     Text | None,
     Field(description="Already-stored source message (<session-id>:<seq>) instead of turns."),
 ]
-BeliefSample = Annotated[float | str, AfterValidator(_belief_sample)]
+BeliefSample = Annotated[StrictFloat | StrictStr, AfterValidator(_belief_sample)]
 BeliefSamples = Annotated[
     list[BeliefSample],
     Field(
@@ -89,9 +119,15 @@ BeliefSamples = Annotated[
         ),
     ),
 ]
-Replicates = Annotated[int, Field(ge=3, le=20, description="Judgments per elicitation packet.")]
+Replicates = Annotated[
+    int, Strict(), Field(ge=3, le=20, description="Judgments per elicitation packet.")
+]
 ContextChars = Annotated[
-    int, Field(ge=1000, le=20000, description="Maximum conversation context per side.")
+    int, Strict(), Field(ge=1000, le=20000, description="Maximum conversation context per side.")
+]
+SessionTitle = Annotated[Text | None, Field(max_length=240)]
+CurrentActor = Annotated[
+    Text | None, Field(description="Authenticated host actor; not a conversational input.")
 ]
 Queries = Annotated[
     list[Text] | None,
@@ -104,12 +140,13 @@ Queries = Annotated[
     ),
 ]
 Kinds = Annotated[list[KnowledgeKind] | None, Field(description="Optional kinds to include.")]
-RecallLimit = Annotated[int, Field(ge=1, le=100, description="Maximum results.")]
+RecallLimit = Annotated[int, Strict(), Field(ge=1, le=100, description="Maximum results.")]
 IncludeSuperseded = Annotated[
-    bool, Field(description="Include history superseded by newer approved knowledge.")
+    bool, Strict(), Field(description="Include history superseded by newer approved knowledge.")
 ]
 StrictScope = Annotated[
     bool,
+    Strict(),
     Field(description="Require every requested scope field to be compatible, not just unknown."),
 ]
 Topic = Annotated[
@@ -120,10 +157,13 @@ Topic = Annotated[
         )
     ),
 ]
-PeopleLimit = Annotated[int, Field(ge=1, le=20, description="Maximum ranked people.")]
-EvidenceLimit = Annotated[int, Field(ge=1, le=20, description="Maximum evidence per person.")]
+PeopleLimit = Annotated[int, Strict(), Field(ge=1, le=20, description="Maximum ranked people.")]
+EvidenceLimit = Annotated[
+    int, Strict(), Field(ge=1, le=20, description="Maximum evidence per person.")
+]
 ApprovedBy = Annotated[
     Text,
+    AfterValidator(_person),
     Field(
         description=(
             "Person who explicitly approved this exact Memory Diff, from the approval event or "
@@ -163,6 +203,13 @@ class _KnowledgeFields(StrictModel):
     reason: Annotated[Text | None, Field(description="Required only for abandoned.")] = None
     evidence_quote: EvidenceQuote
     source_message_id: Text
+    source_message_hash: Annotated[
+        str,
+        Field(
+            pattern=SHA256_HEX,
+            description="Hash of the source message as reviewed; writes fail if it has changed.",
+        ),
+    ]
     elicitation_model: ElicitationModel
     elicitation_run_id: Text
     supersedes_id: Annotated[
@@ -196,7 +243,6 @@ class KnowledgeItem(KnowledgeRecord):
     id: str
     approved_by: str
     source_session_id: str
-    source_message_hash: str
     source_drifted: bool
     is_superseded: bool
     scoring_method: str
@@ -238,10 +284,8 @@ class MemoryDiffRequest(StrictModel):
     kind: Kind = "decision"
     source_turns: SourceTurns = None
     source_message_id: SourceMessageId = None
-    session_title: Annotated[Text | None, Field(max_length=240)] = None
-    current_actor: Annotated[
-        Text | None, Field(description="Authenticated host actor; not a conversational input.")
-    ] = None
+    session_title: SessionTitle = None
+    current_actor: CurrentActor = None
     elicitation_model: ElicitationModel = "claude-sonnet-5"
     replicates: Replicates = 5
     context_chars: ContextChars = 6000
@@ -266,10 +310,16 @@ class EvidenceSource(BaseModel):
 
 
 class PriorKnowledge(BaseModel):
+    """Related approved knowledge shown to the prior, with what recall must preserve."""
+
     id: str
     kind: KnowledgeKind
     proposition: str
     scope: dict[str, JsonValue]
+    conditions: list[Condition]
+    reason: str | None
+    source_message_id: str
+    source_drifted: bool
     posterior_mean: float
 
 

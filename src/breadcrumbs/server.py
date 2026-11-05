@@ -1,14 +1,25 @@
+"""MCP tools and REST routes over one store, behind a Host/Origin check and optional bearer token.
+
+HTTP settings come from the environment: ``BREADCRUMBS_ALLOWED_HOSTS`` (comma-separated host names,
+default loopback only) and ``BREADCRUMBS_API_TOKEN`` (required whenever ``HOST`` is not loopback).
+"""
+
 from __future__ import annotations
 
+import hmac
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from functools import lru_cache
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
+from starlette import types as asgi
+from starlette.datastructures import Headers
 
 from ingestion.store import connect
 
@@ -17,6 +28,7 @@ from .contracts import (
     ApprovedBy,
     BeliefSamples,
     ContextChars,
+    CurrentActor,
     ElicitationModel,
     EvidenceLimit,
     EvidenceQuote,
@@ -39,6 +51,7 @@ from .contracts import (
     Replicates,
     Scope,
     ScopeFilter,
+    SessionTitle,
     SourceMessageId,
     SourceTurns,
     StrictScope,
@@ -85,12 +98,91 @@ CAPTURE DURING THE CONVERSATION
 - Use supersedes_id for corrections so prior approved memory remains auditable.
 """.strip()
 
+LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
+_UNPROTECTED_PATHS = frozenset({"/health"})
+
+
+def allowed_hosts() -> tuple[str, ...]:
+    configured = os.getenv("BREADCRUMBS_ALLOWED_HOSTS", "")
+    hosts = [host.strip().strip("[]").casefold() for host in configured.split(",")]
+    return tuple(host for host in hosts if host) or LOOPBACK_HOSTS
+
+
+def api_token() -> str | None:
+    return os.getenv("BREADCRUMBS_API_TOKEN", "").strip() or None
+
+
+def _hostname(value: str | None) -> str | None:
+    """Host name without port from a Host header, or None when malformed."""
+
+    if not value:
+        return None
+    try:
+        return urlsplit(f"//{value}").hostname
+    except ValueError:
+        return None
+
+
+class HttpGuard:
+    """Reject DNS-rebinding and cross-origin requests, and require the API token when set.
+
+    Covers the REST routes and the mounted MCP endpoint alike.
+    """
+
+    def __init__(self, app: asgi.ASGIApp, hosts: Sequence[str], token: str | None) -> None:
+        self.app = app
+        self.hosts = frozenset(host.casefold() for host in hosts)
+        self.token = token
+
+    async def __call__(self, scope: asgi.Scope, receive: asgi.Receive, send: asgi.Send) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+        headers = Headers(scope=scope)
+        rejection: JSONResponse | None = None
+        origin = headers.get("origin")
+        if _hostname(headers.get("host")) not in self.hosts:
+            rejection = JSONResponse({"detail": "Host not allowed"}, status_code=421)
+        elif origin is not None and _hostname(urlsplit(origin).netloc) not in self.hosts:
+            rejection = JSONResponse({"detail": "Origin not allowed"}, status_code=403)
+        elif self.token is not None and scope["path"] not in _UNPROTECTED_PATHS:
+            scheme, _, supplied = headers.get("authorization", "").partition(" ")
+            if scheme.casefold() != "bearer" or not hmac.compare_digest(
+                supplied.strip().encode(), self.token.encode()
+            ):
+                rejection = JSONResponse(
+                    {"detail": "Missing or invalid bearer token"},
+                    status_code=401,
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+        if rejection is not None:
+            await rejection(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
+
+
+def _transport_security() -> TransportSecuritySettings:
+    # Same hosts as HttpGuard, so widening BREADCRUMBS_ALLOWED_HOSTS does not lock out MCP.
+    hosts = [f"[{host}]" if ":" in host else host for host in allowed_hosts()]
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=[pattern for host in hosts for pattern in (host, f"{host}:*")],
+        allowed_origins=[
+            pattern
+            for host in hosts
+            for scheme in ("http", "https")
+            for pattern in (f"{scheme}://{host}", f"{scheme}://{host}:*")
+        ],
+    )
+
+
 mcp = FastMCP(
     "Breadcrumbs — Organizational Knowledge Memory",
     instructions=BREADCRUMBS_INSTRUCTIONS,
     json_response=True,
     stateless_http=True,
     streamable_http_path="/",
+    transport_security=_transport_security(),
 )
 
 READ_ONLY = ToolAnnotations(
@@ -110,8 +202,8 @@ def prepare_memory_diff(
     kind: Kind = "decision",
     source_turns: SourceTurns = None,
     source_message_id: SourceMessageId = None,
-    session_title: str | None = None,
-    current_actor: str | None = None,
+    session_title: SessionTitle = None,
+    current_actor: CurrentActor = None,
     elicitation_model: ElicitationModel = "claude-sonnet-5",
     replicates: Replicates = 5,
     context_chars: ContextChars = 6000,
@@ -201,15 +293,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
 
 
-app = FastAPI(title="Breadcrumbs MCP", version=__version__, lifespan=lifespan)
+api = FastAPI(title="Breadcrumbs MCP", version=__version__, lifespan=lifespan)
 
 
-@app.exception_handler(ValueError)
+@api.exception_handler(ValueError)
 async def value_error(_: Request, exc: ValueError) -> JSONResponse:
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
-@app.get("/health")
+@api.get("/health")
 def health() -> dict[str, str]:
     with connect(get_store().database_url) as connection:
         connection.execute("SELECT 1")
@@ -217,49 +309,56 @@ def health() -> dict[str, str]:
 
 
 # REST routes take the same request models the MCP tools build.
-@app.post("/knowledge/prepare")
+@api.post("/knowledge/prepare")
 def prepare_memory_diff_http(request: MemoryDiffRequest) -> MemoryDiff:
     return get_store().prepare_memory_diff(request)
 
 
-@app.post("/knowledge/score")
+@api.post("/knowledge/score")
 def score_surprise_http(request: SurpriseRequest) -> SurpriseMetrics:
     return calculate_surprise(request.prior_samples, request.posterior_samples)
 
 
-@app.post("/knowledge")
+@api.post("/knowledge")
 def write_knowledge_http(request: WriteKnowledgeRequest) -> KnowledgeItem:
     return get_store().write_knowledge(request.candidate, request.approved_by)
 
 
-@app.post("/knowledge/recall")
+@api.post("/knowledge/recall")
 def recall_knowledge_http(request: RecallRequest) -> list[RecalledKnowledge]:
     return get_store().recall_knowledge(request)
 
 
-@app.post("/people/context")
+@api.post("/people/context")
 def find_people_with_context_http(request: PeopleRequest) -> PeopleResult:
     return get_store().find_people_with_context(request)
 
 
-app.mount("/mcp", mcp_http_app)
+api.mount("/mcp", mcp_http_app)
+app = HttpGuard(api, allowed_hosts(), api_token())
 
 
 def main() -> None:
-    get_store()
     transport = os.getenv("BREADCRUMBS_TRANSPORT", "stdio")
+    if transport not in ("stdio", "http"):
+        raise SystemExit("BREADCRUMBS_TRANSPORT must be 'stdio' or 'http'")
+    host = os.getenv("HOST", "127.0.0.1")
+    if (
+        transport == "http"
+        and host.strip("[]").casefold() not in LOOPBACK_HOSTS
+        and api_token() is None
+    ):
+        raise SystemExit(
+            f"HOST={host} exposes the approval endpoint; set BREADCRUMBS_API_TOKEN "
+            "and BREADCRUMBS_ALLOWED_HOSTS"
+        )
+    get_store()
     if transport == "stdio":
         mcp.run(transport="stdio")
-    elif transport == "http":
+    else:
         import uvicorn
 
-        uvicorn.run(
-            "breadcrumbs.server:app",
-            host=os.getenv("HOST", "127.0.0.1"),
-            port=int(os.getenv("PORT", "8000")),
-        )
-    else:
-        raise SystemExit("BREADCRUMBS_TRANSPORT must be 'stdio' or 'http'")
+        uvicorn.run("breadcrumbs.server:app", host=host, port=int(os.getenv("PORT", "8000")))
 
 
 if __name__ == "__main__":

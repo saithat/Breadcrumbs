@@ -67,44 +67,82 @@ def search_text(record: KnowledgeRecord) -> str:
 
 
 def _equal(left: JsonValue, right: JsonValue) -> bool:
+    """Scalar equality; strings ignore case, and booleans never equal numbers."""
+
     if isinstance(left, str) and isinstance(right, str):
         return left.casefold() == right.casefold()
+    if isinstance(left, bool) or isinstance(right, bool):
+        return left is right
     return left == right
+
+
+def _field_key(name: str) -> str:
+    """Field names match ignoring case and punctuation; names of only symbols match as written."""
+
+    folded = name.casefold()
+    return "".join(character for character in folded if character.isalnum()) or folded.strip()
+
+
+def _by_key(values: Mapping[str, JsonValue]) -> dict[str, list[JsonValue]]:
+    """Group values by normalized field name; spellings that collide are all kept."""
+
+    grouped: dict[str, list[JsonValue]] = {}
+    for key, value in values.items():
+        grouped.setdefault(_field_key(key), []).append(value)
+    return grouped
 
 
 def _contains(have: JsonValue, want: JsonValue) -> bool:
     """Strings compare case-insensitively, lists match on overlap (an empty list matches only an
-    empty list), objects match as subsets."""
+    empty list), and objects match as subsets with field names normalized at every depth."""
 
+    if isinstance(want, list):
+        if not want:
+            return have == []
+        options = have if isinstance(have, list) else [have]
+        return any(_contains(option, wanted) for option in options for wanted in want)
+    if isinstance(have, list):
+        return any(_contains(option, want) for option in have)
     if isinstance(want, dict):
-        return isinstance(have, dict) and all(
-            key in have and _contains(have[key], child) for key, child in want.items()
+        if not isinstance(have, dict):
+            return False
+        fields = _by_key(have)
+        return all(
+            any(_contains(option, child) for option in fields.get(_field_key(key), []))
+            for key, child in want.items()
         )
-    if want == []:
-        return have == []
-    wanted = want if isinstance(want, list) else [want]
-    options = have if isinstance(have, list) else [have]
-    return any(_equal(left, right) for left in options for right in wanted)
+    return not isinstance(have, dict) and _equal(have, want)
 
 
 def _number(value: JsonValue) -> float | None:
-    if isinstance(value, bool) or not isinstance(value, int | float | str):
+    # Only JSON numbers compare numerically; strings such as "3" or "1_000" are unknown.
+    if isinstance(value, bool) or not isinstance(value, int | float):
         return None
-    try:
-        number = float(value)
-    except ValueError:
-        return None
+    number = float(value)
     return number if math.isfinite(number) else None
 
 
 def _accepts(condition: Condition, requested: JsonValue) -> bool | None:
-    """Whether a requested point value satisfies a typed condition; None when it cannot say."""
+    """Whether a requested value satisfies a typed condition; None when it cannot say.
 
+    A requested list satisfies the condition only if every element does. A requested object must
+    carry ``value`` and, when the condition has a unit, the same ``unit``.
+    """
+
+    if isinstance(requested, list):
+        outcomes = [_accepts(condition, element) for element in requested]
+        if False in outcomes:
+            return False
+        return None if not outcomes or None in outcomes else True
+    unit: JsonValue = None
     if isinstance(requested, dict):
-        unit = requested.get("unit")
-        if unit and condition.unit and not _equal(unit, condition.unit):
+        if "value" not in requested:
             return None
-        requested = requested.get("value")
+        unit, requested = requested.get("unit"), requested["value"]
+    if requested is None or isinstance(requested, dict | list):
+        return None
+    if condition.unit is not None and not (isinstance(unit, str) and _equal(unit, condition.unit)):
+        return None
     operand = condition.value
     match condition.operator:
         case "in":
@@ -124,10 +162,6 @@ def _accepts(condition: Condition, requested: JsonValue) -> bool | None:
     }[condition.operator]
 
 
-def _field_key(name: str) -> str:
-    return "".join(character for character in name.casefold() if character.isalnum())
-
-
 def scope_compatibility(
     stored: Mapping[str, JsonValue],
     requested: Mapping[str, JsonValue],
@@ -139,18 +173,20 @@ def scope_compatibility(
     with ``workers < 4``. Fields the item says nothing about are unknown, not incompatible.
     """
 
-    stored_by_key = {_field_key(key): value for key, value in stored.items()}
+    stored_by_key = _by_key(stored)
     conditions_by_key: dict[str, list[Condition]] = {}
     for condition in conditions:
-        for name in (condition.field, *condition.field_aliases):
-            conditions_by_key.setdefault(_field_key(name), []).append(condition)
+        for name in dict.fromkeys(
+            _field_key(n) for n in (condition.field, *condition.field_aliases)
+        ):
+            conditions_by_key.setdefault(name, []).append(condition)
 
     result = ScopeCompatibility(compatible=[], incompatible=[], unknown=[], score=0.0)
     for field, value in requested.items():
         key = _field_key(field)
         outcomes = [_accepts(condition, value) for condition in conditions_by_key.get(key, [])]
         if key in stored_by_key:
-            outcomes.append(_contains(stored_by_key[key], value))
+            outcomes.append(any(_contains(option, value) for option in stored_by_key[key]))
         # A matching scope field must never hide a failed or unevaluated condition.
         if False in outcomes:
             result.incompatible.append(field)

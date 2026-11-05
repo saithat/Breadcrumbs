@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from breadcrumbs.contracts import RecallRequest
-from tests.support import QUOTE, SOURCE, TURNS, concurrent_retries, record
+from tests.support import QUOTE, SOURCE, TURNS, concurrent_retries, record, sha256
 
 
 @pytest.fixture(autouse=True)
@@ -88,6 +88,7 @@ def test_corrections_append_history_and_cannot_branch(store, add_session):
         proposition=quote,
         evidence_quote=quote,
         source_message_id="correction:0",
+        source_message_hash=sha256(quote),
         supersedes_id=prior.id,
         aliases=[],
     )
@@ -140,6 +141,7 @@ def test_full_text_honours_phrases_and_fuses_rephrasings(store, add_session):
                 proposition=proposition,
                 evidence_quote=proposition,
                 source_message_id=f"{name}:0",
+                source_message_hash=sha256(proposition),
                 aliases=[],
             ),
             "Morgan Lee",
@@ -163,3 +165,72 @@ def test_full_text_honours_phrases_and_fuses_rephrasings(store, add_session):
     )
     assert fused[0].id == rare.id
     assert [match.query for match in fused[0].matches] == ["on-call database owner"]
+
+
+def test_correction_may_keep_proposition_and_source_and_change_only_scope(store):
+    prior = store.write_knowledge(record(), "Morgan Lee")
+    narrowed = record(
+        scope={"system": "payments", "environment": "staging"}, supersedes_id=prior.id
+    )
+    corrected, retried = concurrent_retries(lambda: store.write_knowledge(narrowed, "Morgan Lee"))
+    assert corrected.id == retried.id != prior.id
+    assert corrected.proposition == prior.proposition
+    assert [item.id for item in recall(store, "canary")] == [corrected.id]
+    assert recall(store, "canary")[0].scope == {"system": "payments", "environment": "staging"}
+
+
+def test_approval_fails_when_the_source_changed_after_review(store, db, add_session):
+    add_session(
+        "source", [TURNS[0], ("assistant", f"{SOURCE}\nEdited after the diff was reviewed.")]
+    )
+    with pytest.raises(ValueError, match="changed after the Memory Diff was prepared"):
+        store.write_knowledge(record(), "Morgan Lee")
+    assert count(db) == 0
+
+
+def test_recall_without_queries_lists_the_most_recent_items(store, add_session):
+    written = []
+    for i, surprise in enumerate(["strongly_believe", "uncertain", "believe"]):
+        text = f"Decision {i}: keep the rollout review weekly."
+        add_session(f"s{i}", [("user", text)])
+        written.append(
+            store.write_knowledge(
+                record(
+                    proposition=text,
+                    evidence_quote=text,
+                    source_message_id=f"s{i}:0",
+                    source_message_hash=sha256(text),
+                    posterior_samples=[surprise] * 3,
+                    aliases=[],
+                ),
+                "Morgan Lee",
+            )
+        )
+    listed = store.recall_knowledge(RecallRequest(limit=2))
+    assert [item.id for item in listed] == [written[2].id, written[1].id]
+
+
+def test_kind_filter_finds_matches_beyond_the_unfiltered_pool(store, db, add_session):
+    texts = [f"Kestrel rollout {i}: Kestrel rollout waits for review." for i in range(100)]
+    texts.append("Kestrel was mentioned once among many other unrelated words about rollout.")
+    for i, text in enumerate(texts):
+        add_session(f"k{i}", [("user", text)])
+        abandoned = i == len(texts) - 1
+        last = store.write_knowledge(
+            record(
+                kind="abandoned" if abandoned else "decision",
+                reason="Superseded by the staffing plan." if abandoned else None,
+                proposition=text,
+                evidence_quote=text,
+                source_message_id=f"k{i}:0",
+                source_message_hash=sha256(text),
+                aliases=[],
+                conditions=[],
+            ),
+            "Morgan Lee",
+        )
+    assert last.id not in store._search(db, "Kestrel rollout", 100)  # outside the default pool
+    found = store.recall_knowledge(
+        RecallRequest(queries=["Kestrel rollout"], kinds=["abandoned"], limit=1)
+    )
+    assert [item.proposition for item in found] == [texts[-1]]

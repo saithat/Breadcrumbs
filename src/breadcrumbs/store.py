@@ -145,7 +145,10 @@ class BreadcrumbsStore:
                     raise ValueError(f"Unknown source message: {request.source_message_id}")
                 session_id = row["session_id"]
                 messages = _messages(connection, session_id)
-                source = next(m for m in messages if m.id == request.source_message_id)
+                found = next((m for m in messages if m.id == request.source_message_id), None)
+                if found is None:
+                    raise ValueError(f"Unknown source message: {request.source_message_id}")
+                source = found
                 if quote not in source.content:
                     raise ValueError("evidence_quote must occur verbatim in the source message")
 
@@ -160,6 +163,7 @@ class BreadcrumbsStore:
             if not item.scope_compatibility.incompatible
         ]
         start = source.content.index(quote)
+        source_hash = _sha256(source.content)
         prior, posterior = build_packets(
             messages,
             source,
@@ -185,7 +189,7 @@ class BreadcrumbsStore:
             source=EvidenceSource(
                 source_session_id=session_id,
                 source_message_id=source.id,
-                source_message_hash=_sha256(source.content),
+                source_message_hash=source_hash,
                 role=source.role,
                 evidence_quote=quote,
                 quote_start=start,
@@ -207,6 +211,7 @@ class BreadcrumbsStore:
                 scope=request.scope,
                 evidence_quote=quote,
                 source_message_id=source.id,
+                source_message_hash=source_hash,
                 elicitation_model=request.elicitation_model,
                 elicitation_run_id=run_id,
                 author=request.current_actor,
@@ -221,7 +226,12 @@ class BreadcrumbsStore:
         new item through ``supersedes_id``.
         """
 
-        key = "\x1f".join((record.source_message_id, record.kind, record.proposition))
+        # A correction may keep the proposition and source and change only scope, rationale, or
+        # conditions, so its identity includes what it supersedes.
+        parts: tuple[str, ...] = (record.source_message_id, record.kind, record.proposition)
+        if record.supersedes_id is not None:
+            parts += (record.supersedes_id,)
+        key = "\x1f".join(parts)
         item_id = "K-" + _sha256(key)[:12].upper()
         reviewed = record.model_dump(mode="json") | {"approved_by": approved_by}
         metrics = calculate_surprise(record.prior_samples, record.posterior_samples)
@@ -237,6 +247,12 @@ class BreadcrumbsStore:
                 raise ValueError(f"Unknown source message: {record.source_message_id}")
             if record.evidence_quote not in source["content"]:
                 raise ValueError("evidence_quote must occur verbatim in the source message")
+            # Approval covers the source as reviewed, not whatever a re-import left behind.
+            if _sha256(source["content"]) != record.source_message_hash:
+                raise ValueError(
+                    "the source message changed after the Memory Diff was prepared; "
+                    "prepare and review it again"
+                )
             if record.supersedes_id is not None:
                 if record.supersedes_id == item_id:
                     raise ValueError("a knowledge item cannot supersede itself")
@@ -248,7 +264,6 @@ class BreadcrumbsStore:
                 **metrics.model_dump(),
                 "id": item_id,
                 "source_session_id": source["session_id"],
-                "source_message_hash": _sha256(source["content"]),
                 "search_text": search_text(record),
                 "created_at": utc_now(),
             }
@@ -281,7 +296,7 @@ class BreadcrumbsStore:
                 )
         return stored
 
-    def _search(self, connection: Connection, query: str, limit: int) -> dict[str, float]:
+    def _search(self, connection: Connection, query: str, limit: int | None) -> dict[str, float]:
         """Full-text hits for one query, best first."""
 
         params = {"query": query, "phrases": quoted_phrases(query), "limit": limit}
@@ -293,7 +308,9 @@ class BreadcrumbsStore:
 
         requested_scope = request.scope or {}
         queries = list(dict.fromkeys(request.queries or []))
-        pool = max(100, request.limit * 10)
+        # Filters apply to active heads after the search, so a capped pool could hide every match.
+        filtered = bool(request.kinds) or request.strict_scope
+        pool = None if filtered else max(100, request.limit * 10)
         with self._connect() as connection:
             searches = {query: self._search(connection, query, pool) for query in queries}
             if queries:
@@ -368,11 +385,15 @@ class BreadcrumbsStore:
                     {*results[head.id].matched_via_history, hit}
                 )
 
-        ranked = sorted(
-            results.values(),
-            key=lambda r: (r.retrieval_score, r.bayesian_surprise_bits, r.created_at),
-            reverse=True,
-        )
+        if queries:
+            ranked = sorted(
+                results.values(),
+                key=lambda r: (r.retrieval_score, r.bayesian_surprise_bits, r.created_at),
+                reverse=True,
+            )
+        else:
+            # Without queries the contract promises the most recent items.
+            ranked = sorted(results.values(), key=lambda r: (r.created_at, r.id), reverse=True)
         return ranked[: request.limit]
 
     def find_people_with_context(self, request: PeopleRequest) -> PeopleResult:
